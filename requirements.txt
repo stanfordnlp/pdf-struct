@@ -1,0 +1,8 @@
+click==7.1.2
+numpy==1.19.1
+pdfminer.six==20200726
+regex==2020.7.14
+torch==1.6.0
+tqdm==4.48.0
+transformers==3.0.2
+sklearn==0.0
