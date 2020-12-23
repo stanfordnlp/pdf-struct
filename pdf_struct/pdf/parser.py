@@ -8,8 +8,11 @@ from pdfminer.pdfinterp import PDFResourceManager, PDFPageInterpreter
 from pdfminer.pdfpage import PDFPage
 from pdfminer.pdfparser import PDFParser
 
+from pdf_struct.preprocessing import preprocess_text
+
 
 class TextBox(NamedTuple):
+    # Normalized text
     text: str
     # bbox is [x_left, y_bottom, x_right, y_top] in points with
     # left bottom being [0, 0, 0, 0]
@@ -41,7 +44,7 @@ def parse_layout(layout, page: int):
         if isinstance(lt_obj, LTTextLine):
             text = lt_obj.get_text().strip('\n').replace('\n', ' ')
             if len(text.strip()) > 0:
-                yield TextBox(text, lt_obj.bbox, page)
+                yield TextBox(preprocess_text(text), lt_obj.bbox, page)
         elif isinstance(lt_obj, LTTextBox):
             yield from parse_layout(lt_obj, page)
         elif isinstance(lt_obj, LTFigure):

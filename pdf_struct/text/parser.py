@@ -2,8 +2,9 @@ from typing import List
 
 import regex as re
 
-from pdf_struct.utils import groupwise
 from pdf_struct.listing import get_text_body_indent
+from pdf_struct.preprocessing import preprocess_text
+from pdf_struct.utils import groupwise
 
 
 class TextLine(object):
@@ -29,6 +30,7 @@ class TextLine(object):
     @classmethod
     def from_lines(cls, lines: List[str]) -> List['TextLine']:
         text_lines = []
+        lines = [preprocess_text(l) for l in lines]
         for l_before, l, l_next in groupwise(lines, 3):
             # ignore empty line, but use it determin top/bottom spacing of
             # adjacent line

@@ -18,7 +18,7 @@ class TextDocumentWithFeatures(DocumentWithFeatures):
     @classmethod
     def load(cls, path: str):
         with open(path, 'r') as fin:
-            text_lines = TextLine.from_lines([line.rstrip() for line in fin])
+            text_lines = TextLine.from_lines([line for line in fin])
         texts = [tb.text for tb in text_lines]
         feats = list(extract_features(text_lines))
         return cls(path, feats, texts)

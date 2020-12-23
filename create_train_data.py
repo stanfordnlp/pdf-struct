@@ -14,8 +14,7 @@ def process_pdf(in_path, out_path):
 
     with open(out_path, 'w') as fout:
         for tb in text_boxes:
-            text = tb.text.replace('\n', '').replace('\t', ' ')
-            fout.write(f'{text}\t\n')
+            fout.write(f'{tb.text}\t\n')
 
 
 def process_text(in_path, out_path):
@@ -23,7 +22,7 @@ def process_text(in_path, out_path):
         text_lines = TextLine.from_lines([line for line in fin])
     with open(out_path, 'w') as fout:
         for line in text_lines:
-            fout.write(line.text.replace('\t', ' ').rstrip('\n') + '\t\n')
+            fout.write(f'{line.text}\t\n')
 
 
 @click.command()
