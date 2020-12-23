@@ -94,6 +94,9 @@ def merge_continuous_lines(text_boxes: List[TextBox], threshold=0.5):
         else:
             merged_text_boxes.append(tbi)
         i = j
+    # if len(same_line_boxes) == 1 in last loop, text_boxes[-1] will be missing
+    if len(same_line_boxes) == 1:
+        merged_text_boxes.append(text_boxes[-1])
     return merged_text_boxes
 
 
