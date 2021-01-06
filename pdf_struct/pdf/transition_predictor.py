@@ -6,7 +6,9 @@ import tqdm
 
 from pdf_struct.pdf.features import extract_features
 from pdf_struct.pdf.parser import parse_pdf, merge_continuous_lines, TextBox
-from pdf_struct.transition_predictor import DocumentWithFeatures
+from pdf_struct.transition_labels import DocumentWithFeatures, ListAction, \
+    AnnoListType
+from pdf_struct.utils import get_filename
 
 
 class PDFDocumentLoadingError(ValueError):
@@ -14,10 +16,11 @@ class PDFDocumentLoadingError(ValueError):
 
 
 class PDFDocumentWithFeatures(DocumentWithFeatures):
-    def __init__(self, path: str, feats: list, texts: List[str], text_boxes: List[TextBox]):
-        self._path = path
-        self._feats = feats
-        self._texts = texts
+    def __init__(self, path: str, feats: list, texts: List[str],
+                 labels: List[ListAction], pointers: List[int],
+                 text_boxes: List[TextBox]):
+        super(PDFDocumentWithFeatures, self).__init__(
+            path, feats, texts, labels, pointers)
         self._text_boxes = text_boxes
 
     @property
@@ -25,23 +28,49 @@ class PDFDocumentWithFeatures(DocumentWithFeatures):
         return self._text_boxes
 
     @classmethod
-    def load(cls, path: str):
+    def load(cls, path: str, labels: List[ListAction], pointers: List[int]):
         with open(path, 'rb') as fin:
             text_boxes = list(parse_pdf(fin))
         if len(text_boxes) == 0:
             raise PDFDocumentLoadingError('No text boxes found.')
         text_boxes = merge_continuous_lines(text_boxes)
-        texts = [tb.text for tb in text_boxes]
-        feats = list(extract_features(text_boxes))
-        return cls(path, feats, texts, text_boxes)
+        if len(labels) != len(text_boxes):
+            raise PDFDocumentLoadingError('Number of rows does not match labels.')
+
+        texts = []
+        _labels = []
+        _pointers = []
+        _text_boxes = []
+        n_removed = 0
+        for i in range(len(labels)):
+            if labels[i] != ListAction.EXCLUDED:
+                texts.append(text_boxes[i].text)
+                _labels.append(labels[i])
+                if pointers[i] is None:
+                    p = None
+                elif pointers[i] == -1:
+                    p = -1
+                else:
+                    p = pointers[i] - n_removed
+                _pointers.append(p)
+                _text_boxes.append(text_boxes[i])
+            else:
+                n_removed += 1
+        feats = list(extract_features(_text_boxes))
+
+        return cls(path, feats, texts, _labels, _pointers, _text_boxes)
 
 
-def load_pdfs(base_dir: str) -> List[PDFDocumentWithFeatures]:
+def load_pdfs(base_dir: str, annos: AnnoListType) -> List[PDFDocumentWithFeatures]:
     paths = glob.glob(os.path.join(base_dir, '*.pdf'))
+    # filter first for tqdm to work properly
+    paths = [path for path in paths if get_filename(path) in annos]
     documents = []
     for path in tqdm.tqdm(paths):
+        anno = annos[get_filename(path)]
         try:
-            documents.append(PDFDocumentWithFeatures.load(path))
-        except PDFDocumentLoadingError:
-            print(f'Loading "{path}" failed due to no valid text box found')
+            documents.append(PDFDocumentWithFeatures.load(
+                path, [a[0] for a in anno], [a[1] for a in anno]))
+        except PDFDocumentLoadingError as e:
+            print(f'Loading "{path}" failed. {e}')
     return documents

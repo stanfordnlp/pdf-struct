@@ -6,7 +6,7 @@ import tqdm
 
 from pdf_struct.text.features import extract_features
 from pdf_struct.text.parser import TextLine
-from pdf_struct.transition_predictor import DocumentWithFeatures
+from pdf_struct.transition_labels import DocumentWithFeatures
 
 
 class TextDocumentWithFeatures(DocumentWithFeatures):
