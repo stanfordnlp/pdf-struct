@@ -90,6 +90,15 @@ class SectionNumber(NamedTuple):
             return SectionNumber(self.number + 1, self.section_number_type)
 
     @staticmethod
+    def is_any_next_of(following_section_numbers: Set['SectionNumber'],
+                       section_numbers: Set['SectionNumber']) -> bool:
+        for s1 in section_numbers:
+            for s2 in following_section_numbers:
+                if s2.is_next_of(s1):
+                    return True
+        return False
+
+    @staticmethod
     def extract_section_number(text: str) -> Set['SectionNumber']:
         text = text.strip()
         candidates = set()

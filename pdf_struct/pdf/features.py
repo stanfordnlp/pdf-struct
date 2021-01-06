@@ -9,6 +9,7 @@ from pdf_struct.listing import \
 from pdf_struct.lm import compare_losses
 from pdf_struct.pdf.parser import TextBox, get_margins
 from pdf_struct.utils import pairwise, groupwise
+from pdf_struct.transition_labels import ListAction
 
 
 def get_pdf_margin(clusters, n_pages):
@@ -67,6 +68,9 @@ class PDFFeatureExtractor(object):
         right_space = self.right_margin.mean - tb.bbox[2]
         left_space = tb.bbox[0] - self.left_margin.mean
         return abs(right_space - left_space) < 20
+
+    def left_aligned(self, tb: TextBox):
+        return tb.bbox[0] in self.left_margin
 
     def extra_line_space(self, tb1: TextBox, tb2: TextBox):
         if tb1 is None or tb2 is None:
@@ -157,4 +161,42 @@ class PDFFeatureExtractor(object):
             loss_diff_prev,
             numbered_list_state.value
         )
+        return list(map(float, feat))
+
+    def extract_pointer_features(self, text_boxes: List[TextBox], list_actions: List[ListAction], i: int, j: int):
+        # extract features for classifying whether j-th pointer (which
+        # determines level at (j+1)-th line) should point at i-th line
+        if j + 1 >= len(text_boxes):
+            tb1, tb2 = text_boxes[i], text_boxes[j]
+            n_downs = len(
+                [a for a in list_actions[j:i:-1] if a == ListAction.DOWN])
+            n_ups = len([a for a in list_actions[j:i:-1] if a == ListAction.UP])
+
+            feat = (
+                -1,
+                self.indent(tb1, tb2),
+                -1,
+                self.left_aligned(tb1),
+                True,
+                n_downs,
+                n_ups,
+                n_ups - n_downs
+            )
+        else:
+            tb1, tb2, tb3 = text_boxes[i], text_boxes[j], text_boxes[j+1]
+            section_numbers1 = SectionNumber.extract_section_number(tb1.text)
+            section_numbers3 = SectionNumber.extract_section_number(tb3.text)
+            n_downs = len([a for a in list_actions[j:i:-1] if a == ListAction.DOWN])
+            n_ups = len([a for a in list_actions[j:i:-1] if a == ListAction.UP])
+
+            feat = (
+                SectionNumber.is_any_next_of(section_numbers3, section_numbers1),
+                self.indent(tb1, tb2),
+                self.indent(tb1, tb3),
+                self.left_aligned(tb1),
+                self.left_aligned(tb3),
+                n_downs,
+                n_ups,
+                n_ups - n_downs
+            )
         return list(map(float, feat))

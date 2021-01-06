@@ -48,17 +48,23 @@ class ListAction(Enum):
 
 class DocumentWithFeatures(object):
     def __init__(self, path: str, feats: List[List[float]], texts: List[str],
-                 labels: List[ListAction], pointers: List[Optional[int]]):
+                 labels: List[ListAction], pointers: List[Optional[int]],
+                 pointer_feats: List[Tuple[int, int, List[float]]],
+                 feature_extractor):
         assert len(feats) == len(texts) == len(labels)
         self.path: str = path
         self.feats: List[List[float]] = feats
         self.texts: List[str] = texts
         self.labels: List[ListAction] = labels
         self.pointers: List[Optional[int]] = pointers
+        self.pointer_feats: List[Tuple[int, int, List[float]]] = pointer_feats
+        self.feature_extractor = feature_extractor
 
 
 def _load_anno(in_path) -> List[Tuple[ListAction, Optional[int]]]:
     ret = []
+    root_line_indices = set()
+    root_flg = True
     with open(in_path, 'r') as fin:
         for i, line in enumerate(fin):
             line = line.rstrip('\n').split('\t')
@@ -83,6 +89,19 @@ def _load_anno(in_path) -> List[Tuple[ListAction, Optional[int]]]:
                 l = ListAction.from_key(line[2], ptr)
             except ValueError as e:
                 raise ValueError(f'{e} in {i + 1}-th line of "{in_path}".')
+            if ptr is not None and ptr in root_line_indices:
+                root_flg = True
+            if root_flg:
+                root_line_indices.add(i)
+            if ptr == -1:
+                ptr = max(root_line_indices)
+            if l == ListAction.DOWN:
+                root_flg = False
+            if ptr == i:
+                print('Pointer pointing at root when it is already in root in '
+                      f'{i + 1}-th line of "{in_path}". Turning it into SAME_LEVEL.')
+                ptr = None
+                l = ListAction.SAME_LEVEL
             ret.append((l, ptr))
     return ret
 

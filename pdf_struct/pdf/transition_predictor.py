@@ -1,6 +1,6 @@
 import glob
 import os
-from typing import List
+from typing import List, Tuple
 
 import tqdm
 
@@ -18,9 +18,10 @@ class PDFDocumentLoadingError(ValueError):
 class PDFDocumentWithFeatures(DocumentWithFeatures):
     def __init__(self, path: str, feats: list, texts: List[str],
                  labels: List[ListAction], pointers: List[int],
-                 text_boxes: List[TextBox]):
+                 pointer_feats: List[Tuple[int, int, List[float]]],
+                 feature_extractor, text_boxes: List[TextBox]):
         super(PDFDocumentWithFeatures, self).__init__(
-            path, feats, texts, labels, pointers)
+            path, feats, texts, labels, pointers, pointer_feats, feature_extractor)
         self._text_boxes = text_boxes
 
     @property
@@ -56,9 +57,20 @@ class PDFDocumentWithFeatures(DocumentWithFeatures):
                 _text_boxes.append(text_boxes[i])
             else:
                 n_removed += 1
-        feats = list(PDFFeatureExtractor(_text_boxes).extract_features_all(_text_boxes))
+        feature_extractor = PDFFeatureExtractor(_text_boxes)
+        feats = list(feature_extractor.extract_features_all(_text_boxes))
+        pointer_feats = []
+        for j, p in enumerate(_pointers):
+            if p is not None:
+                assert p >= 0
+                for i in range(j):
+                    if _labels[i] == ListAction.DOWN:
+                        feat = feature_extractor.extract_pointer_features(
+                            _text_boxes, _labels[:j], i, j)
+                        pointer_feats.append((i, j, feat))
 
-        return cls(path, feats, texts, _labels, _pointers, _text_boxes)
+        return cls(path, feats, texts, _labels, _pointers, pointer_feats,
+                   feature_extractor, _text_boxes)
 
 
 def load_pdfs(base_dir: str, annos: AnnoListType) -> List[PDFDocumentWithFeatures]:
