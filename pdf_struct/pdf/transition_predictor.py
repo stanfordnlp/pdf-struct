@@ -4,7 +4,7 @@ from typing import List
 
 import tqdm
 
-from pdf_struct.pdf.features import extract_features
+from pdf_struct.pdf.features import PDFFeatureExtractor
 from pdf_struct.pdf.parser import parse_pdf, merge_continuous_lines, TextBox
 from pdf_struct.transition_labels import DocumentWithFeatures, ListAction, \
     AnnoListType
@@ -56,7 +56,7 @@ class PDFDocumentWithFeatures(DocumentWithFeatures):
                 _text_boxes.append(text_boxes[i])
             else:
                 n_removed += 1
-        feats = list(extract_features(_text_boxes))
+        feats = list(PDFFeatureExtractor(_text_boxes).extract_features_all(_text_boxes))
 
         return cls(path, feats, texts, _labels, _pointers, _text_boxes)
 
