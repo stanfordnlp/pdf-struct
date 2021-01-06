@@ -55,9 +55,11 @@ def evaluate_structure(documents_true: List[DocumentWithFeatures], documents_pre
     accuracies = []
     for m_true, m_pred in zip(ms_true, ms_pred):
         metrics.append([
-            (precision_score(m_true == j, m_pred == j),
+            (precision_score(m_true == j, m_pred == j, zero_division=0),
              recall_score(m_true == j, m_pred == j),
              f1_score(m_true == j, m_pred == j))
+            if np.any(m_true == j) else
+            (np.nan, np.nan, np.nan)
             for j in (0, 1, 2)])
         accuracies.append(accuracy_score(m_true, m_pred))
 
@@ -73,9 +75,9 @@ def evaluate_structure(documents_true: List[DocumentWithFeatures], documents_pre
                 'f1': f1_score(ms_true == rel, ms_pred == rel)
             },
             'macro': {
-                'precision': metrics[:, rel, 0].mean(),
-                'recall': metrics[:, rel, 1].mean(),
-                'f1': metrics[:, rel, 2].mean()
+                'precision': np.nanmean(metrics[:, rel, 0]),
+                'recall': np.nanmean(metrics[:, rel, 1]),
+                'f1': np.nanmean(metrics[:, rel, 2])
             }
         }
 
