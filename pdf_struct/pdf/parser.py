@@ -42,9 +42,9 @@ def parse_pdf(fs) -> Generator[TextBox, None, None]:
 def parse_layout(layout, page: int):
     for lt_obj in layout:
         if isinstance(lt_obj, LTTextLine):
-            text = lt_obj.get_text().strip('\n').replace('\n', ' ')
+            text = preprocess_text(lt_obj.get_text().strip('\n'))
             if len(text.strip()) > 0:
-                yield TextBox(preprocess_text(text), lt_obj.bbox, page)
+                yield TextBox(text, lt_obj.bbox, page)
         elif isinstance(lt_obj, LTTextBox):
             yield from parse_layout(lt_obj, page)
         elif isinstance(lt_obj, LTFigure):
