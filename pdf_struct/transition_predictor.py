@@ -8,7 +8,6 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import confusion_matrix, accuracy_score
 from sklearn.model_selection import KFold
 
-from pdf_struct.structure_reconstructor import construct_hierarchy
 from pdf_struct.transition_labels import ListAction, DocumentWithFeatures
 
 
@@ -21,36 +20,6 @@ def print_confusion_matrix(y_true, y_pred):
     print(f'|{"|".join("-" * len(h) for h in row.split("|"))}|')
     for i, cmi in enumerate(cm):
         print(f'| {i} | ' + ' | '.join(tmpl.format(c) for c in cmi) + ' |')
-
-
-def levels_to_pointer(levels: List[int]):
-    # this is here to convert old level-based notation to pointer notation
-    latest_levels = [0]
-    latest_pointers = [-1]
-    pointers = []
-    for i, l in enumerate(levels):
-        assert len(latest_levels) == len(latest_pointers)
-        if latest_levels[-1] > l:
-            # UP must have happened
-            while latest_levels[-1] > l:
-                latest_levels.pop()
-                latest_pointers.pop()
-            if latest_levels[-1] == l:
-                pointers.append(latest_pointers[-1])
-                latest_pointers[-1] = i
-                continue
-        if latest_levels[-1] < l:
-            # DOWN must have happened
-            latest_levels.append(l)
-            latest_pointers.append(i)
-        else:
-            # consecutive or continuous lines
-            latest_pointers[-1] = -1 if i == 0 else i
-        pointers.append(None)
-    pointers.append(-1)
-    pointers = pointers[1:]
-    assert len(levels) == len(pointers)
-    return pointers
 
 
 def k_fold_train_predict(documents: List[DocumentWithFeatures], n_splits: int=5) -> List[DocumentWithFeatures]:
