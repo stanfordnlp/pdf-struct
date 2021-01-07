@@ -137,11 +137,24 @@ class PDFFeatureExtractor(object):
     def init_state(self):
         self.multi_level_numbered_list = MultiLevelNumberedList()
 
-    def extract_features_all(self, text_boxes: List[TextBox]):
+    def extract_features_all(self, text_boxes: List[TextBox], actions: List[ListAction]):
         self.init_state()
-        for tb1, tb2, tb3, tb4 in groupwise(text_boxes, 4):
-            if tb2 is None:
-                continue
+        for i in range(len(text_boxes)):
+            tb1 = text_boxes[i - 1] if i != 0 else None
+            tb2 = text_boxes[i]
+            if actions[i] == ListAction.ELIMINATE:
+                tb3 = text_boxes[i + 1] if i + 1 < len(text_boxes) else None
+                tb4 = text_boxes[i + 2] if i + 2 < len(text_boxes) else None
+            else:
+                tb3, tb4 = None, None
+                for j in range(i + 1, len(text_boxes)):
+                    if actions[j] != ListAction.ELIMINATE:
+                        tb3 = text_boxes[j]
+                        break
+                for j in range(j + 1, len(text_boxes)):
+                    if actions[j] != ListAction.ELIMINATE:
+                        tb4 = text_boxes[j]
+                    break
             yield self.extract_features(tb1, tb2, tb3, tb4)
         self.multi_level_numbered_list = None
 

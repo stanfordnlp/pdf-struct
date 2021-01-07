@@ -85,6 +85,30 @@ def k_fold_train_predict(documents: List[DocumentWithFeatures], n_splits: int=5)
         for doc_idx in test_index:
             d = copy.deepcopy(documents[doc_idx])
             d.labels = [ListAction(yi) for yi in y_pred[cum_j:cum_j + len(documents[doc_idx].feats)]]
+
+            d.feature_extractor.init_state()
+            for i in range(len(d.text_boxes)):
+                tb1 = d.text_boxes[i - 1] if i != 0 else None
+                tb2 = d.text_boxes[i]
+                if d.labels[i] == ListAction.ELIMINATE:
+                    tb3 = d.text_boxes[i + 1] if i + 1 < len(d.text_boxes) else None
+                    tb4 = d.text_boxes[i + 2] if i + 2 < len(d.text_boxes) else None
+                else:
+                    tb3, tb4 = None, None
+                    for j in range(i + 1, len(d.text_boxes)):
+                        if d.labels[j] != ListAction.ELIMINATE:
+                            tb3 = d.text_boxes[j]
+                            break
+                    for j in range(j + 1, len(d.text_boxes)):
+                        if d.labels[j] != ListAction.ELIMINATE:
+                            tb4 = d.text_boxes[j]
+                        break
+                # still execute extract_features even if d.labels[i] != ListAction.ELIMINATE
+                # to make the state consistent
+                feat = d.feature_extractor.extract_features(tb1, tb2, tb3, tb4)
+                if d.labels[i] != ListAction.ELIMINATE:
+                    d.labels[i] = ListAction(clf.predict(np.array([feat]))[0])
+
             pointers = []
             for j in range(len(d.labels)):
                 X_test_ptr = []

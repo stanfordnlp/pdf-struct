@@ -58,7 +58,7 @@ class PDFDocumentWithFeatures(DocumentWithFeatures):
             else:
                 n_removed += 1
         feature_extractor = PDFFeatureExtractor(_text_boxes)
-        feats = list(feature_extractor.extract_features_all(_text_boxes))
+        feats = list(feature_extractor.extract_features_all(_text_boxes, _labels))
         pointer_feats = []
         for j, p in enumerate(_pointers):
             if p is not None:
