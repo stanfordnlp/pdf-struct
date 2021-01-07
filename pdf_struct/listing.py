@@ -1,7 +1,5 @@
 from enum import Enum
-from enum import Enum
 from typing import List, Set, Tuple, Optional, Union, NamedTuple
-import itertools
 
 import regex as re
 
@@ -160,5 +158,3 @@ class MultiLevelNumberedList(object):
                 self._numbered_list.append(section_number)
                 return NumberedListState.DOWN
         return NumberedListState.UNKNOWN
-
-
