@@ -146,15 +146,12 @@ class PDFFeatureExtractor(object):
                 tb3 = text_boxes[i + 1] if i + 1 < len(text_boxes) else None
                 tb4 = text_boxes[i + 2] if i + 2 < len(text_boxes) else None
             else:
-                tb3, tb4 = None, None
+                tb3 = None
                 for j in range(i + 1, len(text_boxes)):
                     if actions[j] != ListAction.ELIMINATE:
                         tb3 = text_boxes[j]
                         break
-                for j in range(j + 1, len(text_boxes)):
-                    if actions[j] != ListAction.ELIMINATE:
-                        tb4 = text_boxes[j]
-                    break
+                tb4 = text_boxes[j + 1] if j + 1 < len(text_boxes) else None
             yield self.extract_features(tb1, tb2, tb3, tb4)
         self.multi_level_numbered_list = None
 

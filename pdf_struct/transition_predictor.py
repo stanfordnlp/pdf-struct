@@ -52,15 +52,12 @@ def k_fold_train_predict(documents: List[DocumentWithFeatures], n_splits: int=5)
                     tb3 = d.text_boxes[i + 1] if i + 1 < len(d.text_boxes) else None
                     tb4 = d.text_boxes[i + 2] if i + 2 < len(d.text_boxes) else None
                 else:
-                    tb3, tb4 = None, None
+                    tb3 = None
                     for j in range(i + 1, len(d.text_boxes)):
                         if d.labels[j] != ListAction.ELIMINATE:
                             tb3 = d.text_boxes[j]
                             break
-                    for j in range(j + 1, len(d.text_boxes)):
-                        if d.labels[j] != ListAction.ELIMINATE:
-                            tb4 = d.text_boxes[j]
-                        break
+                    tb4 = d.text_boxes[j + 1] if j + 1 < len(d.text_boxes) else None
                 # still execute extract_features even if d.labels[i] != ListAction.ELIMINATE
                 # to make the state consistent
                 feat = d.feature_extractor.extract_features(tb1, tb2, tb3, tb4)
