@@ -1,6 +1,8 @@
-import numpy as np
 from typing import List
-from sklearn.metrics import accuracy_score, f1_score, recall_score, precision_score
+
+import numpy as np
+from sklearn.metrics import confusion_matrix, accuracy_score, f1_score, \
+    recall_score, precision_score
 
 from pdf_struct.transition_predictor import DocumentWithFeatures, ListAction
 
@@ -48,31 +50,33 @@ def create_hierarchy_matrix(document: DocumentWithFeatures) -> np.array:
     return m[:-1, :-1]
 
 
-def evaluate_structure(documents_true: List[DocumentWithFeatures], documents_pred: List[DocumentWithFeatures]):
-    ms_true = [create_hierarchy_matrix(d).flatten() for d in documents_true]
-    ms_pred = [create_hierarchy_matrix(d).flatten() for d in documents_pred]
+def _calc_metrics(ys_true: List[List[int]], ys_pred: List[List[int]],
+                 labels: List[str]):
+    ys_true = [np.array(yi) for yi in ys_true]
+    ys_pred = [np.array(yi) for yi in ys_pred]
+
     metrics = []
     accuracies = []
-    for m_true, m_pred in zip(ms_true, ms_pred):
+    for y_pred, y_true in zip(ys_pred, ys_true):
         metrics.append([
-            (precision_score(m_true == j, m_pred == j, zero_division=0),
-             recall_score(m_true == j, m_pred == j),
-             f1_score(m_true == j, m_pred == j))
-            if np.any(m_true == j) else
+            (precision_score(y_true == j, y_pred == j, zero_division=0),
+             recall_score(y_true == j, y_pred == j),
+             f1_score(y_true == j, y_pred == j))
+            if np.any(y_true == j) else
             (np.nan, np.nan, np.nan)
-            for j in (0, 1, 2)])
-        accuracies.append(accuracy_score(m_true, m_pred))
+            for j in (0, 1, 2, 3, 4)])
+        accuracies.append(accuracy_score(y_true, y_pred))
 
     metrics = np.array(metrics)
-    ms_true = np.concatenate(ms_true)
-    ms_pred = np.concatenate(ms_pred)
+    ys_true = np.concatenate(ys_true)
+    ys_pred = np.concatenate(ys_pred)
 
     def _get_metrics(rel):
         return {
             'micro': {
-                'precision': precision_score(ms_true == rel, ms_pred == rel),
-                'recall': recall_score(ms_true == rel, ms_pred == rel),
-                'f1': f1_score(ms_true == rel, ms_pred == rel)
+                'precision': precision_score(ys_true == rel, ys_pred == rel),
+                'recall': recall_score(ys_true == rel, ys_pred == rel),
+                'f1': f1_score(ys_true == rel, ys_pred == rel)
             },
             'macro': {
                 'precision': np.nanmean(metrics[:, rel, 0]),
@@ -81,12 +85,66 @@ def evaluate_structure(documents_true: List[DocumentWithFeatures], documents_pre
             }
         }
 
-    return {
-        'same_paragraph': _get_metrics(0),
-        'same_level': _get_metrics(1),
-        'parent_child': _get_metrics(2),
-        'accuracy': {
-            'micro': accuracy_score(ms_true, ms_pred),
+    ret = {label: _get_metrics(i) for i, label in enumerate(labels)}
+    ret['accuracy'] = {
+            'micro': accuracy_score(ys_true, ys_pred),
             'macro': np.mean(accuracies)
-        }
     }
+    return ret
+
+
+
+def evaluate_structure(documents_true: List[DocumentWithFeatures], documents_pred: List[DocumentWithFeatures]):
+    ms_true = [create_hierarchy_matrix(d).flatten() for d in documents_true]
+    ms_pred = [create_hierarchy_matrix(d).flatten() for d in documents_pred]
+    return _calc_metrics(ms_true, ms_pred, ['same_paragraph', 'same_level', 'parent_child'])
+
+
+def print_confusion_matrix(y_true, y_pred):
+    cm = confusion_matrix(y_true, y_pred)
+    width = int(np.log10(np.max(cm))) + 1
+    tmpl = f'{{:>{width}}}'
+    row = '|   | ' + ' | '.join(tmpl.format(n) for n in range(len(cm))) + ' |'
+    print(row)
+    print(f'{"|".join("-" * len(h) for h in row.split("|"))}')
+    for i, cmi in enumerate(cm):
+        print(f'| {i} | ' + ' | '.join(tmpl.format(c) for c in cmi) + ' |')
+
+
+def evaluate_labels(documents_true: List[DocumentWithFeatures], documents_pred: List[DocumentWithFeatures]):
+    ys_pred = [np.array([l.value for l in d.labels]) for d in documents_pred]
+    ys_true = [np.array([l.value for l in d.labels]) for d in documents_true]
+    print_confusion_matrix(np.concatenate(ys_true), np.concatenate(ys_pred))
+    metrics = _calc_metrics(
+        ys_true, ys_pred,
+        [ListAction(0).name, ListAction(1).name, ListAction(2).name, ListAction(3).name, ListAction(4).name])
+    ys_pred = [
+        np.isin(yi, (ListAction.DOWN.value, ListAction.UP.value, ListAction.SAME_LEVEL))
+        for yi in ys_pred]
+    ys_true = [
+        np.isin(yi, (ListAction.DOWN.value, ListAction.UP.value, ListAction.SAME_LEVEL))
+        for yi in ys_true]
+    metrics.update({
+        'paragraph_boundary': {
+            'micro': {
+                'precision': precision_score(np.concatenate(ys_true), np.concatenate(ys_pred)),
+                'recall': recall_score(np.concatenate(ys_true), np.concatenate(ys_pred)),
+                'f1': f1_score(np.concatenate(ys_true), np.concatenate(ys_pred))
+            },
+            'macro': {
+                'precision': np.mean([
+                    precision_score(y_true, y_pred)
+                    for y_true, y_pred in zip(ys_true, ys_pred)
+                    if np.any(y_true)]),
+                'recall': np.mean([
+                    recall_score(y_true, y_pred)
+                    for y_true, y_pred in zip(ys_true, ys_pred)
+                    if np.any(y_true)]),
+                'f1': np.mean([
+                    f1_score(y_true, y_pred)
+                    for y_true, y_pred in zip(ys_true, ys_pred)
+                    if np.any(y_true)]),
+            }
+        }
+    })
+    return metrics

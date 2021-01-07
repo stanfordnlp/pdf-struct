@@ -6,7 +6,7 @@ import click
 from pdf_struct import transition_labels, transition_predictor
 from pdf_struct.pdf import load_pdfs
 from pdf_struct.text import load_texts
-from pdf_struct.structure_evaluation import evaluate_structure
+from pdf_struct.structure_evaluation import evaluate_structure, evaluate_labels
 
 
 @click.command()
@@ -40,6 +40,7 @@ def main(file_type: str):
                 }
             }))
     print(json.dumps(evaluate_structure(documents, documents_pred), indent=2))
+    print(json.dumps(evaluate_labels(documents, documents_pred), indent=2))
 
 
 if __name__ == '__main__':

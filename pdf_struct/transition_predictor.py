@@ -5,21 +5,10 @@ from typing import List
 
 import numpy as np
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import confusion_matrix, accuracy_score
+from sklearn.metrics import accuracy_score
 from sklearn.model_selection import KFold
 
 from pdf_struct.transition_labels import ListAction, DocumentWithFeatures
-
-
-def print_confusion_matrix(y_true, y_pred):
-    cm = confusion_matrix(y_true, y_pred)
-    width = int(np.log10(np.max(cm))) + 1
-    tmpl = f'{{:>{width}}}'
-    row = '|   | ' + ' | '.join(tmpl.format(n) for n in range(len(cm))) + ' |'
-    print(row)
-    print(f'|{"|".join("-" * len(h) for h in row.split("|"))}|')
-    for i, cmi in enumerate(cm):
-        print(f'| {i} | ' + ' | '.join(tmpl.format(c) for c in cmi) + ' |')
 
 
 def k_fold_train_predict(documents: List[DocumentWithFeatures], n_splits: int=5) -> List[DocumentWithFeatures]:
@@ -98,9 +87,5 @@ def k_fold_train_predict(documents: List[DocumentWithFeatures], n_splits: int=5)
             cum_j += len(documents[doc_idx].feats)
     predicted_documents = [
         predicted_documents[j] for j in np.argsort(np.concatenate(test_indices))]
-    y_pred = np.array([l.value for d in predicted_documents for l in d.labels])
-    y_true = np.array([l.value for d in documents for l in d.labels])
-    print(f'Done prediction. Accuracy={accuracy_score(y_true, y_pred)}.')
-    print_confusion_matrix(y_true, y_pred)
 
     return predicted_documents
