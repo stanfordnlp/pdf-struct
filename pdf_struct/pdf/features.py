@@ -1,6 +1,9 @@
 from typing import Optional, List
+from functools import reduce
 
 import regex as re
+import numpy as np
+import editdistance
 
 from pdf_struct import features
 from pdf_struct.clustering import get_margins, cluster_positions
@@ -25,6 +28,12 @@ def _gt(tb: Optional[TextBox]) -> Optional[str]:
 
 class PDFFeatureExtractor(object):
     def __init__(self, text_boxes: List[TextBox]):
+        self.text_boxes = text_boxes
+        # bbox is [x_left, y_bottom, x_right, y_top] in points with
+        # left bottom being [0, 0, 0, 0]
+        self.bboxes = np.array([tb.bbox for tb in text_boxes])
+        self.pages = np.array([tb.page for tb in text_boxes])
+
         horizontal_thresh = 10  # 10 points = 1em
         line_spacing_thresh = 2  # 2 points = 1ex / 2
         n_pages = len(set(t.page for t in text_boxes))
@@ -44,6 +53,30 @@ class PDFFeatureExtractor(object):
         )
         self.line_spacing = max(clusters_s, key=lambda c: len(c))
         self.multi_level_numbered_list = None
+
+    def similar_position_similar_text(self, tb: TextBox):
+        # FIXME: this is O(n^2) operation when called for each tb
+        iou_thresh = 0.5
+        editdistance_thresh = 0.1
+        overlap_widths = (np.minimum(tb.bbox[2], self.bboxes[:, 2]) -
+                          np.maximum(tb.bbox[0], self.bboxes[:, 0]))
+        overlap_heights = (np.minimum(tb.bbox[3], self.bboxes[:, 3]) -
+                           np.maximum(tb.bbox[1], self.bboxes[:, 1]))
+        span_widths = (np.maximum(tb.bbox[2], self.bboxes[:, 2]) -
+                       np.minimum(tb.bbox[0], self.bboxes[:, 0]))
+        span_heights = (np.maximum(tb.bbox[3], self.bboxes[:, 3]) -
+                        np.minimum(tb.bbox[1], self.bboxes[:, 1]))
+        # not exacly iou but its approximation
+        iou = (overlap_widths * overlap_heights) / (span_widths * span_heights)
+        mask = reduce(np.logical_and, (
+            overlap_widths > 0, overlap_heights > 0, iou > iou_thresh,
+            tb.page != self.pages))
+        for j in np.where(mask)[0]:
+            tb2 = self.text_boxes[j]
+            d = editdistance.eval(tb.text, tb2.text) / max(len(tb.text), len(tb2.text))
+            if editdistance_thresh > d:
+                return True
+        return False
 
     # PDF specific features using PDF info
     def line_break(self, tb1: TextBox, tb2: TextBox):
@@ -155,6 +188,7 @@ class PDFFeatureExtractor(object):
             self.page_like2(tb1),
             self.page_like2(tb2),
             self.page_like2(tb3),
+            self.similar_position_similar_text(tb2),
             self.page_change(tb1, tb2),
             self.page_change(tb2, tb3),
             loss_diff_next,
