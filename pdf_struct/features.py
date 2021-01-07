@@ -12,7 +12,7 @@ def whereas(text1: Optional[str], text2: Optional[str]):
 
 
 def colon_ish(text1: Optional[str], text2: Optional[str]):
-    if text2 is None:
+    if text1 is None:
         return False
     return text1.strip()[-1] in {'-', ';', ':', ','}
 
