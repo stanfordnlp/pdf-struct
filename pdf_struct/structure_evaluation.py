@@ -119,10 +119,10 @@ def evaluate_labels(documents_true: List[DocumentWithFeatures], documents_pred: 
         ys_true, ys_pred,
         [ListAction(0).name, ListAction(1).name, ListAction(2).name, ListAction(3).name, ListAction(4).name])
     ys_pred = [
-        np.isin(yi, (ListAction.DOWN.value, ListAction.UP.value, ListAction.SAME_LEVEL))
+        np.isin(yi, (ListAction.DOWN.value, ListAction.UP.value, ListAction.SAME_LEVEL.value))
         for yi in ys_pred]
     ys_true = [
-        np.isin(yi, (ListAction.DOWN.value, ListAction.UP.value, ListAction.SAME_LEVEL))
+        np.isin(yi, (ListAction.DOWN.value, ListAction.UP.value, ListAction.SAME_LEVEL.value))
         for yi in ys_true]
     metrics.update({
         'paragraph_boundary': {
