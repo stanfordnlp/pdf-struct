@@ -29,7 +29,7 @@ class PDFDocumentWithFeatures(DocumentWithFeatures):
         return self._text_boxes
 
     @classmethod
-    def load(cls, path: str, labels: List[ListAction], pointers: List[int]):
+    def load(cls, path: str, labels: List[ListAction], pointers: List[int], dummy_feats: bool=False):
         with open(path, 'rb') as fin:
             text_boxes = list(parse_pdf(fin))
         if len(text_boxes) == 0:
@@ -57,23 +57,29 @@ class PDFDocumentWithFeatures(DocumentWithFeatures):
                 _text_boxes.append(text_boxes[i])
             else:
                 n_removed += 1
-        feature_extractor = PDFFeatureExtractor(_text_boxes)
-        feats = list(feature_extractor.extract_features_all(_text_boxes, _labels))
-        pointer_feats = []
-        for j, p in enumerate(_pointers):
-            if p is not None:
-                assert p >= 0
-                for i in range(j):
-                    if _labels[i] == ListAction.DOWN:
-                        feat = feature_extractor.extract_pointer_features(
-                            _text_boxes, _labels[:j], i, j)
-                        pointer_feats.append((i, j, feat))
+        if dummy_feats:
+            feature_extractor = None
+            # Do not assign None because some functions relies on its length
+            feats = [[]] * len(_text_boxes)
+            pointer_feats = []
+        else:
+            feature_extractor = PDFFeatureExtractor(_text_boxes)
+            feats = list(feature_extractor.extract_features_all(_text_boxes, _labels))
+            pointer_feats = []
+            for j, p in enumerate(_pointers):
+                if p is not None:
+                    assert p >= 0
+                    for i in range(j):
+                        if _labels[i] == ListAction.DOWN:
+                            feat = feature_extractor.extract_pointer_features(
+                                _text_boxes, _labels[:j], i, j)
+                            pointer_feats.append((i, j, feat))
 
         return cls(path, feats, texts, _labels, _pointers, pointer_feats,
                    feature_extractor, _text_boxes)
 
 
-def load_pdfs(base_dir: str, annos: AnnoListType) -> List[PDFDocumentWithFeatures]:
+def load_pdfs(base_dir: str, annos: AnnoListType, dummy_feats: bool=False) -> List[PDFDocumentWithFeatures]:
     paths = glob.glob(os.path.join(base_dir, '*.pdf'))
     # filter first for tqdm to work properly
     paths = [path for path in paths if get_filename(path) in annos]
@@ -82,7 +88,7 @@ def load_pdfs(base_dir: str, annos: AnnoListType) -> List[PDFDocumentWithFeature
         anno = annos[get_filename(path)]
         try:
             documents.append(PDFDocumentWithFeatures.load(
-                path, [a[0] for a in anno], [a[1] for a in anno]))
+                path, [a[0] for a in anno], [a[1] for a in anno], dummy_feats=dummy_feats))
         except PDFDocumentLoadingError as e:
             print(f'Loading "{path}" failed. {e}')
     return documents

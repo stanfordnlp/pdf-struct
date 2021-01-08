@@ -19,7 +19,7 @@ def main(file_type: str):
 
     print('Loading and extracting features from raw files')
     if file_type == 'pdf':
-        documents = load_pdfs(os.path.join('data', 'raw'), annos)
+        documents = load_pdfs(os.path.join('data', 'raw'), annos, dummy_feats=True)
     else:
         documents = load_texts(os.path.join('data', 'raw'), annos)
 
