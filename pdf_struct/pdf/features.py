@@ -53,6 +53,11 @@ class PDFFeatureExtractor(object):
         )
         self.line_spacing = max(clusters_s, key=lambda c: len(c))
         self.multi_level_numbered_list = None
+        page_top = self.bboxes[:, 3].max()
+        page_bottom = self.bboxes[:, 1].min()
+        header_footer_ratio = 0.15
+        self.header_thresh = page_top - header_footer_ratio * (page_top - page_bottom)
+        self.footer_thresh = page_bottom + header_footer_ratio * (page_top - page_bottom)
 
     def similar_position_similar_text(self, tb: TextBox):
         # FIXME: this is O(n^2) operation when called for each tb
@@ -77,6 +82,12 @@ class PDFFeatureExtractor(object):
             if editdistance_thresh > d:
                 return True
         return False
+
+    def header_region(self, tb: TextBox):
+        return tb.bbox[3] > self.header_thresh
+
+    def footer_region(self, tb: TextBox):
+        return tb.bbox[1] < self.footer_thresh
 
     # PDF specific features using PDF info
     def line_break(self, tb1: TextBox, tb2: TextBox):
@@ -201,6 +212,8 @@ class PDFFeatureExtractor(object):
             self.similar_position_similar_text(tb2),
             self.page_change(tb1, tb2),
             self.page_change(tb2, tb3),
+            self.footer_region(tb2),
+            self.header_region(tb2),
             loss_diff_next,
             loss_diff_prev,
             numbered_list_state.value
