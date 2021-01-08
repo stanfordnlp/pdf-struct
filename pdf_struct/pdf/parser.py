@@ -1,5 +1,7 @@
-from typing import NamedTuple, Generator
-from typing import Tuple, List
+from typing import NamedTuple, Generator, Tuple, List, Set
+import uuid
+from functools import reduce
+import operator
 
 from pdfminer.converter import PDFPageAggregator
 from pdfminer.layout import LAParams, LTTextBox, LTTextLine, LTFigure
@@ -18,6 +20,7 @@ class TextBox(NamedTuple):
     # left bottom being [0, 0, 0, 0]
     bbox: Tuple[float, float, float, float]
     page: int
+    blocks: Set[str]
 
     def to_dict(self):
         return {
@@ -36,17 +39,20 @@ def parse_pdf(fs) -> Generator[TextBox, None, None]:
     for page_idx, page in enumerate(PDFPage.create_pages(doc)):
          interpreter.process_page(page)
          layout = device.get_result()
-         yield from parse_layout(layout, page_idx + 1)
+         yield from parse_layout(layout, page_idx + 1, None)
 
 
-def parse_layout(layout, page: int):
+def parse_layout(layout, page: int, block: str):
     for lt_obj in layout:
         if isinstance(lt_obj, LTTextLine):
             text = preprocess_text(lt_obj.get_text().strip('\n'))
+            if block is None:
+                block = uuid.uuid4().hex
             if len(text.strip()) > 0:
-                yield TextBox(text, lt_obj.bbox, page)
+                yield TextBox(text, lt_obj.bbox, page, {block})
         elif isinstance(lt_obj, LTTextBox):
-            yield from parse_layout(lt_obj, page)
+            block = uuid.uuid4().hex
+            yield from parse_layout(lt_obj, page, block)
         elif isinstance(lt_obj, LTFigure):
             pass
 
@@ -90,7 +96,8 @@ def merge_continuous_lines(text_boxes: List[TextBox], threshold=0.5):
                     max(bbox[2], tbk.bbox[2]),
                     max(bbox[3], tbk.bbox[3])
                 ]
-            merged_text_boxes.append(TextBox(text, bbox, tbi.page))
+            blocks = reduce(operator.or_, (b.blocks for b in same_line_boxes))
+            merged_text_boxes.append(TextBox(text, bbox, tbi.page, blocks))
         else:
             merged_text_boxes.append(tbi)
         i = j
