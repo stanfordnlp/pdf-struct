@@ -95,8 +95,14 @@ def _calc_metrics(ys_true: List[List[int]], ys_pred: List[List[int]],
 
 
 def evaluate_structure(documents_true: List[DocumentWithFeatures], documents_pred: List[DocumentWithFeatures]):
-    ms_true = [create_hierarchy_matrix(d).flatten() for d in documents_true]
-    ms_pred = [create_hierarchy_matrix(d).flatten() for d in documents_pred]
+    # Since hierarchy matrix is a upper triangle matrix, feeding full matrix
+    # with create_hierarchy_matrix(d).flatten() will give higher accuracy than it should do
+    ms_true = [
+        np.concatenate([r[i + 1:] for i, r in enumerate(create_hierarchy_matrix(d))])
+        for d in documents_true]
+    ms_pred = [
+        np.concatenate([r[i + 1:] for i, r in enumerate(create_hierarchy_matrix(d))])
+        for d in documents_pred]
     return _calc_metrics(ms_true, ms_pred, ['same_paragraph', 'same_level', 'parent_child'])
 
 
