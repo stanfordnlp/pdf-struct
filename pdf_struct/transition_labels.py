@@ -8,6 +8,11 @@ import tqdm
 from pdf_struct.utils import get_filename
 
 
+class TextBlock(object):
+    def __init__(self, text: str):
+        self.text: str = text
+
+
 class ListAction(Enum):
     EXCLUDED = -1
     CONTINUOUS = 0
@@ -50,7 +55,8 @@ class DocumentWithFeatures(object):
     def __init__(self, path: str, feats: List[List[float]], texts: List[str],
                  labels: List[ListAction], pointers: List[Optional[int]],
                  pointer_feats: List[Tuple[int, int, List[float]]],
-                 feature_extractor):
+                 feature_extractor: 'pdf_struct.features.BaseFeatureExtractor',
+                 text_blocks: List[TextBlock]):
         assert len(feats) == len(texts) == len(labels)
         self.path: str = path
         self.feats: List[List[float]] = feats
@@ -58,7 +64,51 @@ class DocumentWithFeatures(object):
         self.labels: List[ListAction] = labels
         self.pointers: List[Optional[int]] = pointers
         self.pointer_feats: List[Tuple[int, int, List[float]]] = pointer_feats
-        self.feature_extractor = feature_extractor
+        self.feature_extractor: 'pdf_struct.features.BaseFeatureExtractor' = feature_extractor
+        self.text_blocks: List[TextBlock] = text_blocks
+
+    @staticmethod
+    def _filter_text_blocks(text_blocks, labels, pointers):
+        _labels = []
+        _pointers = []
+        _text_boxes = []
+        n_removed = 0
+        for i in range(len(labels)):
+            if labels[i] != ListAction.EXCLUDED:
+                _labels.append(labels[i])
+                if pointers[i] is None:
+                    p = None
+                elif pointers[i] == -1:
+                    p = -1
+                else:
+                    p = pointers[i] - n_removed
+                _pointers.append(p)
+                _text_boxes.append(text_blocks[i])
+            else:
+                n_removed += 1
+        return _text_boxes, _labels, _pointers
+
+    @staticmethod
+    def _extract_features(feature_extractor_cls, text_blocks, labels, pointers, dummy_feats):
+        if dummy_feats:
+            feature_extractor = None
+            # Do not assign None because some functions relies on its length
+            feats = [[]] * len(text_blocks)
+            pointer_feats = []
+        else:
+            feature_extractor = feature_extractor_cls(text_blocks)
+            feats = list(feature_extractor.extract_features_all(text_blocks, labels))
+            pointer_feats = []
+            for j, p in enumerate(pointers):
+                if p is not None:
+                    assert p >= 0
+                    for i in range(j):
+                        if labels[i] == ListAction.DOWN:
+                            feat = feature_extractor.extract_pointer_features(
+                                text_blocks, labels[:j], i, j)
+                            pointer_feats.append((i, j, feat))
+        return feature_extractor, feats, pointer_feats
+
 
 
 def _load_anno(in_path) -> List[Tuple[ListAction, Optional[int]]]:

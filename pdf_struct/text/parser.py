@@ -4,16 +4,17 @@ import regex as re
 
 from pdf_struct.listing import get_text_body_indent
 from pdf_struct.preprocessing import preprocess_text
+from pdf_struct.transition_labels import TextBlock
 from pdf_struct.utils import groupwise
 
 
-class TextLine(object):
+class TextLine(TextBlock):
     _PAT_INDENT = re.compile(' *')
 
     def __init__(self, l_before, l, l_next):
+        super(TextLine, self).__init__(l.strip())
         self.indent = self._get_indent(l)
         self.width = self._get_line_width(l)
-        self.text = l.strip()
         self.top_spacing = l_before is None or len(l_before.strip()) == 0
         self.bottom_spacing = l_next is None or len(l_next.strip()) == 0
         self.body_indent = get_text_body_indent(l)

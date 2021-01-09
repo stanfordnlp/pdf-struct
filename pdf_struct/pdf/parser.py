@@ -11,23 +11,17 @@ from pdfminer.pdfpage import PDFPage
 from pdfminer.pdfparser import PDFParser
 
 from pdf_struct.preprocessing import preprocess_text
+from pdf_struct.transition_labels import TextBlock
 
 
-class TextBox(NamedTuple):
-    # Normalized text
-    text: str
-    # bbox is [x_left, y_bottom, x_right, y_top] in points with
-    # left bottom being [0, 0, 0, 0]
-    bbox: Tuple[float, float, float, float]
-    page: int
-    blocks: Set[str]
-
-    def to_dict(self):
-        return {
-            'text': self.text,
-            'bbox': self.bbox,
-            'page': self.page
-        }
+class TextBox(TextBlock):
+    def __init__(self, text: str, bbox: Tuple[float, float, float, float], page: int, blocks: Set[str]):
+        super(TextBox, self).__init__(text)
+        # bbox is [x_left, y_bottom, x_right, y_top] in points with
+        # left bottom being [0, 0, 0, 0]
+        self.bbox: Tuple[float, float, float, float] = bbox
+        self.page: int = page
+        self.blocks: Set[str] = blocks
 
 
 def parse_pdf(fs) -> Generator[TextBox, None, None]:

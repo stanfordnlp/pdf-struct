@@ -7,12 +7,10 @@ import editdistance
 
 from pdf_struct import features
 from pdf_struct.clustering import get_margins, cluster_positions
-from pdf_struct.listing import \
-    MultiLevelNumberedList, NumberedListState, SectionNumber
+from pdf_struct.listing import NumberedListState, SectionNumber
 from pdf_struct.lm import compare_losses
 from pdf_struct.pdf.parser import TextBox, get_margins
-from pdf_struct.utils import pairwise, groupwise
-from pdf_struct.transition_labels import ListAction
+from pdf_struct.utils import pairwise
 
 
 def get_pdf_margin(clusters, n_pages):
@@ -26,7 +24,7 @@ def _gt(tb: Optional[TextBox]) -> Optional[str]:
     return None if tb is None else tb.text
 
 
-class PDFFeatureExtractor(object):
+class PDFFeatureExtractor(features.BaseFeatureExtractor):
     def __init__(self, text_boxes: List[TextBox]):
         self.text_boxes = text_boxes
         # bbox is [x_left, y_bottom, x_right, y_top] in points with
@@ -145,27 +143,6 @@ class PDFFeatureExtractor(object):
             return True
         return tb1.page != tb2.page
 
-    def init_state(self):
-        self.multi_level_numbered_list = MultiLevelNumberedList()
-
-    def extract_features_all(self, text_boxes: List[TextBox], actions: List[ListAction]):
-        self.init_state()
-        for i in range(len(text_boxes)):
-            tb1 = text_boxes[i - 1] if i != 0 else None
-            tb2 = text_boxes[i]
-            if actions[i] == ListAction.ELIMINATE:
-                tb3 = text_boxes[i + 1] if i + 1 < len(text_boxes) else None
-                tb4 = text_boxes[i + 2] if i + 2 < len(text_boxes) else None
-            else:
-                tb3 = None
-                for j in range(i + 1, len(text_boxes)):
-                    if actions[j] != ListAction.ELIMINATE:
-                        tb3 = text_boxes[j]
-                        break
-                tb4 = text_boxes[j + 1] if j + 1 < len(text_boxes) else None
-            yield self.extract_features(tb1, tb2, tb3, tb4)
-        self.multi_level_numbered_list = None
-
     def extract_features(self, tb1: TextBox, tb2: TextBox, tb3: TextBox, tb4: TextBox):
         if tb3 is None:
             numbered_list_state = NumberedListState.DOWN
@@ -218,42 +195,4 @@ class PDFFeatureExtractor(object):
             loss_diff_prev,
             numbered_list_state.value
         )
-        return list(map(float, feat))
-
-    def extract_pointer_features(self, text_boxes: List[TextBox], list_actions: List[ListAction], i: int, j: int):
-        # extract features for classifying whether j-th pointer (which
-        # determines level at (j+1)-th line) should point at i-th line
-        if j + 1 >= len(text_boxes):
-            tb1, tb2 = text_boxes[i], text_boxes[j]
-            n_downs = len(
-                [a for a in list_actions[j:i:-1] if a == ListAction.DOWN])
-            n_ups = len([a for a in list_actions[j:i:-1] if a == ListAction.UP])
-
-            feat = (
-                -1,
-                self.indent(tb1, tb2),
-                -1,
-                self.left_aligned(tb1),
-                True,
-                n_downs,
-                n_ups,
-                n_ups - n_downs
-            )
-        else:
-            tb1, tb2, tb3 = text_boxes[i], text_boxes[j], text_boxes[j+1]
-            section_numbers1 = SectionNumber.extract_section_number(tb1.text)
-            section_numbers3 = SectionNumber.extract_section_number(tb3.text)
-            n_downs = len([a for a in list_actions[j:i:-1] if a == ListAction.DOWN])
-            n_ups = len([a for a in list_actions[j:i:-1] if a == ListAction.UP])
-
-            feat = (
-                SectionNumber.is_any_next_of(section_numbers3, section_numbers1),
-                self.indent(tb1, tb2),
-                self.indent(tb1, tb3),
-                self.left_aligned(tb1),
-                self.left_aligned(tb3),
-                n_downs,
-                n_ups,
-                n_ups - n_downs
-            )
         return list(map(float, feat))

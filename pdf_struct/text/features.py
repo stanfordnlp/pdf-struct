@@ -5,10 +5,9 @@ import regex as re
 from pdf_struct import features
 from pdf_struct.clustering import get_margins, cluster_positions
 from pdf_struct.listing import \
-    MultiLevelNumberedList, NumberedListState, SectionNumber
+    NumberedListState, SectionNumber
 from pdf_struct.lm import compare_losses
 from pdf_struct.text.parser import TextLine
-from pdf_struct.utils import groupwise
 
 
 def _gt(tb: Optional[TextLine]) -> Optional[str]:
@@ -16,18 +15,20 @@ def _gt(tb: Optional[TextLine]) -> Optional[str]:
     return None if tb is None else tb.text
 
 
-def extract_features(texts: List[TextLine]):
-    right_margin = get_margins(
-        cluster_positions([l.width for l in texts], 8)[0][::-1],
-        5)
+class PlainTextFeatureExtractor(features.BaseFeatureExtractor):
+    def __init__(self, text_lines: List[TextLine]):
+        self.right_margin = get_margins(
+            cluster_positions([l.width for l in text_lines], 8)[0][::-1], 5)
 
-    # Text specific features using text info
-    def line_break(t1: Optional[TextLine], t2: Optional[TextLine]):
+    def line_break(self, t1: Optional[TextLine], t2: Optional[TextLine]):
         if t1 is None:
             return True
-        return t1.width not in right_margin
+        return t1.width not in self.right_margin
 
-    def indent(t1: Optional[TextLine], t2: Optional[TextLine]):
+    def left_aligned(self, tb: TextLine):
+        return tb.indent == 0
+
+    def indent(self, t1: Optional[TextLine], t2: Optional[TextLine]):
         if t1 is None or t2 is None:
             return 3
         if t1.indent < t2.indent:
@@ -36,6 +37,7 @@ def extract_features(texts: List[TextLine]):
             return 2
         return 0
 
+    @staticmethod
     def indent_body(t1: Optional[TextLine], t2: Optional[TextLine]):
         if t1 is None or t2 is None:
             return 3
@@ -45,35 +47,39 @@ def extract_features(texts: List[TextLine]):
             return 2
         return 0
 
-    def centered(t: Optional[TextLine]):
+    def centered(self, t: Optional[TextLine]):
         if t is None:
             return False
         if t.indent == 0:
             return False
-        right_space = right_margin.mean - t.width
+        right_space = self.right_margin.mean - t.width
         left_space = t.indent
         return abs(right_space - left_space) < 8
 
+    @staticmethod
     def extra_line_space(t1: Optional[TextLine]):
         if t1 is None:
             return -1
         return t1.top_spacing
 
-    def dict_like(t: Optional[TextLine]):
+    def dict_like(self, t: Optional[TextLine]):
         if t is None:
             return False
-        return ':' in t.text and t.width not in right_margin
+        return ':' in t.text and t.width not in self.right_margin
 
+    @staticmethod
     def page_like1(t: Optional[TextLine]):
         if t is None:
             return False
         return re.search('page [1-9]|PAGE', t.text) is not None
 
+    @staticmethod
     def page_like2(t: Optional[TextLine]):
         if t is None:
             return False
         return re.search('[0-9]/[1-9]|- ?[0-9]+ ?-', t.text) is not None
 
+    @staticmethod
     def horizontal_line(t: Optional[TextLine]):
         if t is None:
             return False
@@ -81,14 +87,11 @@ def extract_features(texts: List[TextLine]):
         charset.discard(' ')
         return len(charset) == 1 and len(t.text.strip()) >= 3 and charset.pop() in set('*-=#%_+')
 
-    multi_level_numbered_list = MultiLevelNumberedList()
-    for t1, t2, t3, t4 in groupwise(texts, 4):
-        if t2 is None:
-            continue
+    def extract_features(self, t1: TextLine, t2: TextLine, t3: TextLine, t4: TextLine):
         if t3 is None:
             numbered_list_state = NumberedListState.DOWN
         else:
-            numbered_list_state = multi_level_numbered_list.try_append(
+            numbered_list_state = self.multi_level_numbered_list.try_append(
                 SectionNumber.extract_section_number(t3.text))
         if t3 is None or t4 is None:
             loss_diff_next = 0.
@@ -103,13 +106,13 @@ def extract_features(texts: List[TextLine]):
             features.colon_ish(_gt(t2), _gt(t3)),
             features.punctuated(_gt(t1), _gt(t2)),
             features.punctuated(_gt(t2), _gt(t3)),
-            line_break(t1, t2),
-            line_break(t2, t3),
+            self.line_break(t1, t2),
+            self.line_break(t2, t3),
             features.list_ish(_gt(t2), _gt(t3)),
-            indent(t1, t2),
-            indent(t2, t3),
-            indent_body(t1, t2),
-            indent_body(t2, t3),
+            self.indent(t1, t2),
+            self.indent(t2, t3),
+            self.indent_body(t1, t2),
+            self.indent_body(t2, t3),
             features.therefore(_gt(t2), _gt(t3)),
             features.all_capital(_gt(t2)),
             features.all_capital(_gt(t3)),
@@ -117,23 +120,23 @@ def extract_features(texts: List[TextLine]):
             features.mask_continuation(_gt(t2), _gt(t3)),
             features.space_separated(_gt(t2)),
             features.space_separated(_gt(t3)),
-            centered(t2),
-            centered(t3),
-            extra_line_space(t2),
-            extra_line_space(t3),
-            dict_like(t2),
-            dict_like(t3),
-            page_like1(t1),
-            page_like1(t2),
-            page_like1(t3),
-            page_like2(t1),
-            page_like2(t2),
-            page_like2(t3),
-            horizontal_line(t1),
-            horizontal_line(t2),
-            horizontal_line(t3),
+            self.centered(t2),
+            self.centered(t3),
+            self.extra_line_space(t2),
+            self.extra_line_space(t3),
+            self.dict_like(t2),
+            self.dict_like(t3),
+            self.page_like1(t1),
+            self.page_like1(t2),
+            self.page_like1(t3),
+            self.page_like2(t1),
+            self.page_like2(t2),
+            self.page_like2(t3),
+            self.horizontal_line(t1),
+            self.horizontal_line(t2),
+            self.horizontal_line(t3),
             loss_diff_next,
             loss_diff_prev,
             numbered_list_state.value
         )
-        yield list(map(float, feat))
+        return list(map(float, feat))

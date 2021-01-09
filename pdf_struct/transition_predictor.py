@@ -1,17 +1,16 @@
 import copy
 import random
 from collections import Counter
-from typing import List
+from typing import List, Optional
 
 import numpy as np
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import accuracy_score
 from sklearn.model_selection import KFold
 
 from pdf_struct.transition_labels import ListAction, DocumentWithFeatures
 
 
-def k_fold_train_predict(documents: List[DocumentWithFeatures], n_splits: int=5) -> List[DocumentWithFeatures]:
+def k_fold_train_predict(documents: List[DocumentWithFeatures], n_splits: int=5, used_features: Optional[List[int]]=None) -> List[DocumentWithFeatures]:
     print(f'Extracted {sum(map(lambda d: len(d.feats), documents))} lines from '
           f'{len(documents)} documents with label distribution: '
           f'{Counter(sum(map(lambda d: d.labels, documents), []))} for evaluation.')
@@ -45,19 +44,19 @@ def k_fold_train_predict(documents: List[DocumentWithFeatures], n_splits: int=5)
             d.labels = [ListAction(yi) for yi in y_pred[cum_j:cum_j + len(documents[doc_idx].feats)]]
 
             d.feature_extractor.init_state()
-            for i in range(len(d.text_boxes)):
-                tb1 = d.text_boxes[i - 1] if i != 0 else None
-                tb2 = d.text_boxes[i]
+            for i in range(len(d.text_blocks)):
+                tb1 = d.text_blocks[i - 1] if i != 0 else None
+                tb2 = d.text_blocks[i]
                 if d.labels[i] == ListAction.ELIMINATE:
-                    tb3 = d.text_boxes[i + 1] if i + 1 < len(d.text_boxes) else None
-                    tb4 = d.text_boxes[i + 2] if i + 2 < len(d.text_boxes) else None
+                    tb3 = d.text_blocks[i + 1] if i + 1 < len(d.text_blocks) else None
+                    tb4 = d.text_blocks[i + 2] if i + 2 < len(d.text_blocks) else None
                 else:
                     tb3 = None
-                    for j in range(i + 1, len(d.text_boxes)):
+                    for j in range(i + 1, len(d.text_blocks)):
                         if d.labels[j] != ListAction.ELIMINATE:
-                            tb3 = d.text_boxes[j]
+                            tb3 = d.text_blocks[j]
                             break
-                    tb4 = d.text_boxes[j + 1] if j + 1 < len(d.text_boxes) else None
+                    tb4 = d.text_blocks[j + 1] if j + 1 < len(d.text_blocks) else None
                 # still execute extract_features even if d.labels[i] != ListAction.ELIMINATE
                 # to make the state consistent
                 feat = d.feature_extractor.extract_features(tb1, tb2, tb3, tb4)
@@ -72,7 +71,7 @@ def k_fold_train_predict(documents: List[DocumentWithFeatures], n_splits: int=5)
                     for i in range(j):
                         if d.labels[i] == ListAction.DOWN:
                             feat = d.feature_extractor.extract_pointer_features(
-                                d.text_boxes, d.labels[:j], i, j)
+                                d.text_blocks, d.labels[:j], i, j)
                             X_test_ptr.append(feat)
                             ptr_candidates.append(i)
                 if len(X_test_ptr) > 0:
