@@ -30,10 +30,7 @@ def process_text(in_path, out_path):
 def main(file_type):
     paths = glob.glob(os.path.join('data', 'raw', f'*.{file_type}'))
     out_dir = os.path.join('data', f'anno_{file_type}')
-    try:
-        os.makedirs(out_dir)
-    except OSError:
-        pass
+    os.makedirs(out_dir)
     for path in tqdm.tqdm(paths):
         out_filename = os.path.splitext(os.path.basename(path))[0] + '.tsv'
         if file_type == 'pdf':
