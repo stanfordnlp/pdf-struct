@@ -49,11 +49,11 @@ def main(file_type: str, search_method: str, n_rounds: int, n_jobs: int):
     cur_feature_indices = set()
     for round in range(n_rounds):
         if search_method == 'incr-important':
-            results_round = Parallel(n_jobs=n_jobs)(
+            results_round = Parallel(n_jobs=n_jobs, verbose=10)(
                 delayed(single_run)(documents, sorted(cur_feature_indices | {i}), i)
                 for i in all_feature_indices - cur_feature_indices)
         else:
-            results_round = Parallel(n_jobs=n_jobs)(
+            results_round = Parallel(n_jobs=n_jobs, verbose=10)(
                 delayed(single_run)(documents, all_feature_indices - (cur_feature_indices | {i}), i)
                 for i in all_feature_indices - cur_feature_indices)
 
