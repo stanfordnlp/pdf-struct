@@ -54,7 +54,7 @@ def main(file_type: str, search_method: str, n_rounds: int, n_jobs: int):
                 for i in all_feature_indices - cur_feature_indices)
         else:
             results_round = Parallel(n_jobs=n_jobs, verbose=10)(
-                delayed(single_run)(documents, all_feature_indices - (cur_feature_indices | {i}), i)
+                delayed(single_run)(documents, sorted(all_feature_indices - (cur_feature_indices | {i}), i))
                 for i in all_feature_indices - cur_feature_indices)
 
         if search_method == 'incr-important' or search_method == 'decr-unimportant':
