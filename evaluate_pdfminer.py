@@ -23,7 +23,7 @@ def main():
     for document in documents:
         d = copy.deepcopy(document)
         labels = []
-        for tb1, tb2 in pairwise(d.text_boxes):
+        for tb1, tb2 in pairwise(d.text_blocks):
             labels.append(
                 ListAction.CONTINUOUS if len(tb1.blocks & tb2.blocks) > 0 else ListAction.SAME_LEVEL
             )
