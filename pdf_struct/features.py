@@ -46,7 +46,7 @@ class BaseFeatureExtractor(object):
     def extract_pointer_features(self, text_blocks: List[TextBlock], list_actions: List[ListAction], i: int, j: int):
         # extract features for classifying whether j-th pointer (which
         # determines level at (j+1)-th line) should point at i-th line
-        assert 0 < i < j < len(text_blocks)
+        assert 0 <= i < j < len(text_blocks)
 
         n_downs = len([a for a in list_actions[j:i:-1] if a == ListAction.DOWN])
         n_ups = len([a for a in list_actions[j:i:-1] if a == ListAction.UP])
