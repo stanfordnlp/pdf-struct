@@ -41,12 +41,12 @@ def main(file_type: str):
 
             labels = []
             pointers = []
-            clusters = [clusters_l[mappings_l[document.text_boxes[0].bbox[0]]]]
-            for i in range(1, len(document.text_boxes)):
-                c_i = clusters_l[mappings_l[document.text_boxes[i].bbox[0]]]
+            clusters = [clusters_l[mappings_l[document.text_blocks[0].bbox[0]]]]
+            for i in range(1, len(document.text_blocks)):
+                c_i = clusters_l[mappings_l[document.text_blocks[i].bbox[0]]]
                 if clusters[-1] == c_i:
-                    ls = document.text_boxes[i-1].bbox[1] - document.text_boxes[i].bbox[1]
-                    if document.text_boxes[i-1].page == document.text_boxes[i].page and ls in line_spacing:
+                    ls = document.text_blocks[i-1].bbox[1] - document.text_blocks[i].bbox[1]
+                    if document.text_blocks[i-1].page == document.text_blocks[i].page and ls in line_spacing:
                         # normal line spacing
                         labels.append(ListAction.CONTINUOUS)
                     else:
@@ -74,9 +74,40 @@ def main(file_type: str):
             documents_pred.append(d)
 
     else:
-        raise NotImplementedError()
-        documents = load_texts(os.path.join('data', 'raw'), annos)
-        # implement it using "indent" value
+        documents = load_texts(os.path.join('data', 'raw'), annos, dummy_feats=True)
+        documents_pred = []
+        for document in documents:
+            labels = []
+            pointers = []
+            indent_history = [document.text_blocks[0].indent]
+            for i in range(1, len(document.text_blocks)):
+                indent = document.text_blocks[i].indent
+                if indent_history[-1] == indent:
+                    if document.text_blocks[i].top_spacing:
+                        labels.append(ListAction.SAME_LEVEL)
+                    else:
+                        labels.append(ListAction.CONTINUOUS)
+                    pointers.append(None)
+                elif indent_history[-1] < indent:
+                    labels.append(ListAction.DOWN)
+                    pointers.append(None)
+                elif indent_history[-1] > indent:
+                    labels.append(ListAction.UP)
+                    for j in range(i - 1, -1, -1):
+                        if indent_history[j] is not None and indent_history[j] == indent:
+                            pointers.append(j)
+                            break
+                        # Disable non-matching cluster to avoid matching to counsins
+                        indent_history[j] = None
+                    else:
+                        pointers.append(-1)
+                indent_history.append(indent)
+            labels.append(ListAction.UP)
+            pointers.append(-1)
+            d = copy.deepcopy(document)
+            d.labels = labels
+            d.pointers = pointers
+            documents_pred.append(d)
 
     print(json.dumps(evaluate_structure(documents, documents_pred), indent=2))
     print(json.dumps(evaluate_labels(documents, documents_pred), indent=2))
