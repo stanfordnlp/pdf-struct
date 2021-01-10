@@ -25,7 +25,9 @@ def roman_to_int(expr: str):
 
 # Only allows until 39
 _RE_ROMAN = 'X{0,2}I[XV]|V?I{0,3}'
-_TMPLS_RE_ENUM = ['\({num}\)', '{num}\. ', '{num}\)', '{num}  ', '§{num}', '{num}:']
+_TMPLS_RE_ENUM = [
+    '\({num}\)', '{num}\. ', '{num}\)', '{num}  ', '§{num}', '{num}:',
+    'ARTICLE *{num}', 'Article *{num}', 'SECTION *{num}', 'Section *{num}']
 
 _PATS_ALPH_LOWER = [
     re.compile(tmpl.format(num='(?P<num>[a-z])')) for tmpl in _TMPLS_RE_ENUM]
