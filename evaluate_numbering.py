@@ -21,7 +21,7 @@ def main(file_type: str):
     if file_type == 'pdf':
         documents = load_pdfs(os.path.join('data', 'raw'), annos, dummy_feats=True)
     else:
-        documents = load_texts(os.path.join('data', 'raw'), annos)
+        documents = load_texts(os.path.join('data', 'raw'), annos, dummy_feats=True)
 
     documents_pred = [predict_transitions_numbering(document)
                       for document in documents]
