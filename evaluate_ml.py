@@ -3,6 +3,8 @@ import os
 from collections import Counter
 
 import click
+import numpy as np
+from sklearn.metrics import accuracy_score
 
 from pdf_struct import transition_labels, transition_predictor
 from pdf_struct.pdf import load_pdfs
@@ -31,10 +33,15 @@ def main(file_type: str):
     with open(os.path.join('data', f'results_{file_type}.jsonl'), 'w') as fout:
         for d, d_p in zip(documents, documents_pred):
             assert d.path == d_p.path
+            transition_prediction_accuracy = accuracy_score(
+                np.array([l.value for l in d.labels]),
+                np.array([l.value for l in d_p.labels])
+            )
             fout.write(json.dumps({
                 'path': d.path,
                 'texts': d.texts,
                 'features': [list(map(float, f)) for f in d.feats],
+                'transition_prediction_accuracy': transition_prediction_accuracy,
                 'ground_truth': {
                     'labels': [l.name for l in d.labels],
                     'pointers': d.pointers
