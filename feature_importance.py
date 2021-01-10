@@ -74,8 +74,9 @@ def main(file_type: str, search_method: str, n_rounds: int, n_jobs: int):
             'chosen_feature': result_chosen["target_feature"],
             'results': results_round
         })
-    with open(os.path.join('data', f'results_importance_{file_type}_{search_method}.json'), 'w') as fout:
-        json.dump(results, fout, indent=2)
+        # save every round in case something goes wrong
+        with open(os.path.join('data', f'results_importance_{file_type}_{search_method}.json'), 'w') as fout:
+            json.dump(results, fout, indent=2)
 
 
 if __name__ == '__main__':
