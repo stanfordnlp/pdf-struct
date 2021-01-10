@@ -20,7 +20,6 @@ def main():
     print('Loading and extracting features from raw files')
     documents = load_pdfs(os.path.join('data', 'raw'), annos, dummy_feats=True)
     documents_pred = []
-    import pdb; pdb.set_trace()
     for document in documents:
         d = copy.deepcopy(document)
         labels = []
