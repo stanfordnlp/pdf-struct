@@ -29,10 +29,10 @@ def main(file_type: str):
             line_spacing_thresh = 2  # 2 points = 1ex / 2
 
             clusters_l, mappings_l = cluster_positions(
-                [b.bbox[0] for b in document.text_boxes], horizontal_thresh)
+                [b.bbox[0] for b in document.text_blocks], horizontal_thresh)
             clusters_s, mappings_s = cluster_positions(
                 [b1.bbox[1] - b2.bbox[1]
-                 for b1, b2 in pairwise(sorted(document.text_boxes, key=lambda b: (
+                 for b1, b2 in pairwise(sorted(document.text_blocks, key=lambda b: (
                     b.page, -b.bbox[1], b.bbox[0])))
                  if b1.page == b2.page],
                 line_spacing_thresh
