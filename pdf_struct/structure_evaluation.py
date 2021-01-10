@@ -74,9 +74,9 @@ def _calc_metrics(ys_true: List[List[int]], ys_pred: List[List[int]],
     def _get_metrics(rel):
         return {
             'micro': {
-                'precision': precision_score(ys_true == rel, ys_pred == rel),
+                'precision': precision_score(ys_true == rel, ys_pred == rel, zero_division=0),
                 'recall': recall_score(ys_true == rel, ys_pred == rel),
-                'f1': f1_score(ys_true == rel, ys_pred == rel)
+                'f1': f1_score(ys_true == rel, ys_pred == rel, zero_division=0)
             },
             'macro': {
                 'precision': np.nanmean(metrics[:, rel, 0]),
@@ -133,13 +133,13 @@ def evaluate_labels(documents_true: List[DocumentWithFeatures], documents_pred: 
     metrics.update({
         'paragraph_boundary': {
             'micro': {
-                'precision': precision_score(np.concatenate(ys_true), np.concatenate(ys_pred)),
+                'precision': precision_score(np.concatenate(ys_true), np.concatenate(ys_pred), zero_division=0),
                 'recall': recall_score(np.concatenate(ys_true), np.concatenate(ys_pred)),
                 'f1': f1_score(np.concatenate(ys_true), np.concatenate(ys_pred))
             },
             'macro': {
                 'precision': np.mean([
-                    precision_score(y_true, y_pred)
+                    precision_score(y_true, y_pred, zero_division=0)
                     for y_true, y_pred in zip(ys_true, ys_pred)
                     if np.any(y_true)]),
                 'recall': np.mean([
@@ -147,7 +147,7 @@ def evaluate_labels(documents_true: List[DocumentWithFeatures], documents_pred: 
                     for y_true, y_pred in zip(ys_true, ys_pred)
                     if np.any(y_true)]),
                 'f1': np.mean([
-                    f1_score(y_true, y_pred)
+                    f1_score(y_true, y_pred, zero_division=0)
                     for y_true, y_pred in zip(ys_true, ys_pred)
                     if np.any(y_true)]),
             }
