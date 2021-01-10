@@ -46,18 +46,32 @@ class BaseFeatureExtractor(object):
     def extract_pointer_features(self, text_blocks: List[TextBlock], list_actions: List[ListAction], i: int, j: int):
         # extract features for classifying whether j-th pointer (which
         # determines level at (j+1)-th line) should point at i-th line
+        assert 0 < i < j < len(text_blocks)
+
+        n_downs = len([a for a in list_actions[j:i:-1] if a == ListAction.DOWN])
+        n_ups = len([a for a in list_actions[j:i:-1] if a == ListAction.UP])
+
+        for k in range(i, 0, -1):
+            if list_actions[k - 1] in {ListAction.UP, ListAction.DOWN,
+                                       ListAction.SAME_LEVEL}:
+                head_tb = text_blocks[k]
+                break
+        else:
+            head_tb = text_blocks[0]
+
         if j + 1 >= len(text_blocks):
             tb1, tb2 = text_blocks[i], text_blocks[j]
-            n_downs = len(
-                [a for a in list_actions[j:i:-1] if a == ListAction.DOWN])
-            n_ups = len([a for a in list_actions[j:i:-1] if a == ListAction.UP])
 
             feat = (
                 -1,
+                -1,
                 self.indent(tb1, tb2),
+                -1,
+                self.indent(head_tb, tb2),
                 -1,
                 self.left_aligned(tb1),
                 True,
+                self.left_aligned(head_tb),
                 n_downs,
                 n_ups,
                 n_ups - n_downs
@@ -65,16 +79,20 @@ class BaseFeatureExtractor(object):
         else:
             tb1, tb2, tb3 = text_blocks[i], text_blocks[j], text_blocks[j+1]
             section_numbers1 = SectionNumber.extract_section_number(tb1.text)
+            section_number_head = SectionNumber.extract_section_number(head_tb.text)
             section_numbers3 = SectionNumber.extract_section_number(tb3.text)
-            n_downs = len([a for a in list_actions[j:i:-1] if a == ListAction.DOWN])
-            n_ups = len([a for a in list_actions[j:i:-1] if a == ListAction.UP])
 
             feat = (
                 SectionNumber.is_any_next_of(section_numbers3, section_numbers1),
+                SectionNumber.is_any_next_of(
+                    section_numbers3, section_number_head),
                 self.indent(tb1, tb2),
                 self.indent(tb1, tb3),
+                self.indent(head_tb, tb2),
+                self.indent(head_tb, tb3),
                 self.left_aligned(tb1),
                 self.left_aligned(tb3),
+                self.left_aligned(head_tb),
                 n_downs,
                 n_ups,
                 n_ups - n_downs
