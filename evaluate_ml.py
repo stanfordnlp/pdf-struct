@@ -1,12 +1,13 @@
 import json
 import os
+from collections import Counter
 
 import click
 
 from pdf_struct import transition_labels, transition_predictor
 from pdf_struct.pdf import load_pdfs
-from pdf_struct.text import load_texts
 from pdf_struct.structure_evaluation import evaluate_structure, evaluate_labels
+from pdf_struct.text import load_texts
 
 
 @click.command()
@@ -21,6 +22,10 @@ def main(file_type: str):
         documents = load_pdfs(os.path.join('data', 'raw'), annos)
     else:
         documents = load_texts(os.path.join('data', 'raw'), annos)
+
+    print(f'Extracted {sum(map(lambda d: len(d.feats), documents))} lines from '
+          f'{len(documents)} documents with label distribution: '
+          f'{Counter(sum(map(lambda d: d.labels, documents), []))} for evaluation.')
     documents_pred = transition_predictor.k_fold_train_predict(documents)
 
     with open(os.path.join('data', f'results_{file_type}.jsonl'), 'w') as fout:

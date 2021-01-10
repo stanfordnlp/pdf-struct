@@ -1,6 +1,5 @@
 import copy
 import random
-from collections import Counter
 from typing import List, Optional
 
 import numpy as np
@@ -11,9 +10,7 @@ from pdf_struct.transition_labels import ListAction, DocumentWithFeatures
 
 
 def k_fold_train_predict(documents: List[DocumentWithFeatures], n_splits: int=5, used_features: Optional[List[int]]=None) -> List[DocumentWithFeatures]:
-    print(f'Extracted {sum(map(lambda d: len(d.feats), documents))} lines from '
-          f'{len(documents)} documents with label distribution: '
-          f'{Counter(sum(map(lambda d: d.labels, documents), []))} for evaluation.')
+    used_features = None if used_features is None else np.array(used_features)
     test_indices = []
     predicted_documents = []
     random.seed(123)
@@ -25,6 +22,9 @@ def k_fold_train_predict(documents: List[DocumentWithFeatures], n_splits: int=5,
         X_train = np.array(sum([documents[j].feats for j in train_index], []), dtype=np.float64)
         y_train = np.array([l.value for j in train_index for l in documents[j].labels], dtype=int)
         X_test = np.array(sum([documents[j].feats for j in test_index], []), dtype=np.float64)
+        if used_features is not None:
+            X_train = X_train[:, used_features]
+            X_test = X_test[:, used_features]
 
         clf = RandomForestClassifier().fit(X_train, y_train)
         y_pred = clf.predict(X_test)
@@ -59,9 +59,12 @@ def k_fold_train_predict(documents: List[DocumentWithFeatures], n_splits: int=5,
                     tb4 = d.text_blocks[j + 1] if j + 1 < len(d.text_blocks) else None
                 # still execute extract_features even if d.labels[i] != ListAction.ELIMINATE
                 # to make the state consistent
-                feat = d.feature_extractor.extract_features(tb1, tb2, tb3, tb4)
+                feat = np.array([
+                    d.feature_extractor.extract_features(tb1, tb2, tb3, tb4)])
+                if used_features is not None:
+                    feat = feat[:, used_features]
                 if d.labels[i] != ListAction.ELIMINATE:
-                    d.labels[i] = ListAction(clf.predict(np.array([feat]))[0])
+                    d.labels[i] = ListAction(clf.predict(feat)[0])
 
             pointers = []
             for j in range(len(d.labels)):

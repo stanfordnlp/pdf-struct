@@ -117,10 +117,11 @@ def print_confusion_matrix(y_true, y_pred):
         print(f'| {i} | ' + ' | '.join(tmpl.format(c) for c in cmi) + ' |')
 
 
-def evaluate_labels(documents_true: List[DocumentWithFeatures], documents_pred: List[DocumentWithFeatures]):
+def evaluate_labels(documents_true: List[DocumentWithFeatures], documents_pred: List[DocumentWithFeatures], confusion_matrix=True):
     ys_pred = [np.array([l.value for l in d.labels]) for d in documents_pred]
     ys_true = [np.array([l.value for l in d.labels]) for d in documents_true]
-    print_confusion_matrix(np.concatenate(ys_true), np.concatenate(ys_pred))
+    if confusion_matrix:
+        print_confusion_matrix(np.concatenate(ys_true), np.concatenate(ys_pred))
     metrics = _calc_metrics(
         ys_true, ys_pred,
         [ListAction(0).name, ListAction(1).name, ListAction(2).name, ListAction(3).name, ListAction(4).name])
