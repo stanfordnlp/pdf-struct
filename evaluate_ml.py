@@ -51,6 +51,7 @@ def main(file_type: str):
                     'pointers': d_p.pointers
                 }
             }))
+            fout.write('\n')
     print(json.dumps(evaluate_structure(documents, documents_pred), indent=2))
     print(json.dumps(evaluate_labels(documents, documents_pred), indent=2))
 
