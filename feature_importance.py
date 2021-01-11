@@ -43,7 +43,10 @@ def main(file_type: str, search_method: str, n_rounds: int, n_jobs: int):
 
     n_features = len(documents[0].feats[0])
     if n_rounds <= 0:
-        n_rounds = n_features
+        if search_method[:4] == 'incr':
+            n_rounds = n_features
+        else:
+            n_rounds = n_features - 1
     all_feature_indices = set(range(n_features))
     results = []
     cur_feature_indices = set()
