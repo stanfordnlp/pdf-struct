@@ -149,50 +149,22 @@ class PDFFeatureExtractor(features.BaseFeatureExtractor):
         else:
             numbered_list_state = self.multi_level_numbered_list.try_append(
                 SectionNumber.extract_section_number(tb3.text))
-        if tb1 is None or tb3 is None:
-            loss_diff_next = 0.
-            loss_diff_prev = 0.
-        else:
-            loss_diff_next = compare_losses(tb2.text, tb3.text, prev=tb1.text)
-            loss_diff_prev = compare_losses(tb2.text, tb1.text, next=tb3.text)
 
         feat = (
-            features.whereas(_gt(tb2), _gt(tb3)),
-            features.colon_ish(_gt(tb1), _gt(tb2)),
-            features.colon_ish(_gt(tb2), _gt(tb3)),
-            features.punctuated(_gt(tb1), _gt(tb2)),
-            features.punctuated(_gt(tb2), _gt(tb3)),
             self.line_break(tb1, tb2),
             self.line_break(tb2, tb3),
-            features.list_ish(_gt(tb2), _gt(tb3)),
             self.indent(tb1, tb2),
             self.indent(tb2, tb3),
-            features.therefore(_gt(tb2), _gt(tb3)),
-            features.all_capital(_gt(tb2)),
-            features.all_capital(_gt(tb3)),
-            features.mask_continuation(_gt(tb1), _gt(tb2)),
-            features.mask_continuation(_gt(tb2), _gt(tb3)),
             features.space_separated(_gt(tb2)),
             features.space_separated(_gt(tb3)),
             self.centered(tb2),
             self.centered(tb3),
             self.extra_line_space(tb1, tb2),
             self.extra_line_space(tb2, tb3),
-            self.dict_like(tb2),
-            self.dict_like(tb3),
-            self.page_like(tb1),
-            self.page_like(tb2),
-            self.page_like(tb3),
-            self.page_like2(tb1),
-            self.page_like2(tb2),
-            self.page_like2(tb3),
             self.similar_position_similar_text(tb2),
             self.page_change(tb1, tb2),
             self.page_change(tb2, tb3),
             self.footer_region(tb2),
-            self.header_region(tb2),
-            loss_diff_next,
-            loss_diff_prev,
-            numbered_list_state.value
+            self.header_region(tb2)
         )
         return list(map(float, feat))
