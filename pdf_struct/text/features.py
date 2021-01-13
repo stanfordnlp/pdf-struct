@@ -93,12 +93,6 @@ class PlainTextFeatureExtractor(features.BaseFeatureExtractor):
         else:
             numbered_list_state = self.multi_level_numbered_list.try_append(
                 SectionNumber.extract_section_number(t3.text))
-        if t1 is None or t3 is None:
-            loss_diff_next = 0.
-            loss_diff_prev = 0.
-        else:
-            loss_diff_next = compare_losses(t2.text, t3.text, prev=t1.text)
-            loss_diff_prev = compare_losses(t2.text, t1.text, next=t3.text)
 
         feat = (
             features.whereas(_gt(t2), _gt(t3)),
@@ -106,24 +100,12 @@ class PlainTextFeatureExtractor(features.BaseFeatureExtractor):
             features.colon_ish(_gt(t2), _gt(t3)),
             features.punctuated(_gt(t1), _gt(t2)),
             features.punctuated(_gt(t2), _gt(t3)),
-            self.line_break(t1, t2),
-            self.line_break(t2, t3),
             features.list_ish(_gt(t2), _gt(t3)),
-            self.indent(t1, t2),
-            self.indent(t2, t3),
-            self.indent_body(t1, t2),
-            self.indent_body(t2, t3),
             features.therefore(_gt(t2), _gt(t3)),
             features.all_capital(_gt(t2)),
             features.all_capital(_gt(t3)),
             features.mask_continuation(_gt(t1), _gt(t2)),
             features.mask_continuation(_gt(t2), _gt(t3)),
-            features.space_separated(_gt(t2)),
-            features.space_separated(_gt(t3)),
-            self.centered(t2),
-            self.centered(t3),
-            self.extra_line_space(t2),
-            self.extra_line_space(t3),
             self.dict_like(t2),
             self.dict_like(t3),
             self.page_like1(t1),
@@ -135,8 +117,6 @@ class PlainTextFeatureExtractor(features.BaseFeatureExtractor):
             self.horizontal_line(t1),
             self.horizontal_line(t2),
             self.horizontal_line(t3),
-            loss_diff_next,
-            loss_diff_prev,
             numbered_list_state.value
         )
         return list(map(float, feat))
