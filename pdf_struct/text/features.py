@@ -93,12 +93,12 @@ class PlainTextFeatureExtractor(features.BaseFeatureExtractor):
         else:
             numbered_list_state = self.multi_level_numbered_list.try_append(
                 SectionNumber.extract_section_number(t3.text))
-        if t3 is None or t4 is None:
+        if t1 is None or t3 is None:
             loss_diff_next = 0.
             loss_diff_prev = 0.
         else:
-            loss_diff_next = compare_losses(t3.text, t4.text, prev=t2.text)
-            loss_diff_prev = compare_losses(t3.text, t2.text, next=t4.text)
+            loss_diff_next = compare_losses(t2.text, t3.text, prev=t1.text)
+            loss_diff_prev = compare_losses(t2.text, t1.text, next=t3.text)
 
         feat = (
             features.whereas(_gt(t2), _gt(t3)),

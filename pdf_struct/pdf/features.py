@@ -149,12 +149,12 @@ class PDFFeatureExtractor(features.BaseFeatureExtractor):
         else:
             numbered_list_state = self.multi_level_numbered_list.try_append(
                 SectionNumber.extract_section_number(tb3.text))
-        if tb3 is None or tb4 is None:
+        if tb1 is None or tb3 is None:
             loss_diff_next = 0.
             loss_diff_prev = 0.
         else:
-            loss_diff_next = compare_losses(tb3.text, tb4.text, prev=tb2.text)
-            loss_diff_prev = compare_losses(tb3.text, tb2.text, next=tb4.text)
+            loss_diff_next = compare_losses(tb2.text, tb3.text, prev=tb1.text)
+            loss_diff_prev = compare_losses(tb2.text, tb1.text, next=tb3.text)
 
         feat = (
             features.whereas(_gt(tb2), _gt(tb3)),
