@@ -100,11 +100,3 @@ def merge_continuous_lines(text_boxes: List[TextBox], threshold=0.5):
         merged_text_boxes.append(text_boxes[-1])
     return merged_text_boxes
 
-
-def get_margins(clusters, n_pages):
-    # I don't think header/footer rows exceed 3 respectively
-    min_occurances = n_pages * (3 + 3) + 1
-    for c in clusters:
-        if len(c) >= min_occurances:
-            return c
-    return clusters[0]

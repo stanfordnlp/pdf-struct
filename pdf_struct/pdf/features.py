@@ -9,8 +9,9 @@ from pdf_struct import features
 from pdf_struct.clustering import get_margins, cluster_positions
 from pdf_struct.listing import NumberedListState, SectionNumber
 from pdf_struct.lm import compare_losses
-from pdf_struct.pdf.parser import TextBox, get_margins
+from pdf_struct.pdf.parser import TextBox
 from pdf_struct.utils import pairwise
+from pdf_struct.clustering import get_margins
 
 
 def get_pdf_margin(clusters, n_pages):
