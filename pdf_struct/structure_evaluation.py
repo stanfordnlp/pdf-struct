@@ -108,13 +108,30 @@ def evaluate_structure(documents_true: List[DocumentWithFeatures], documents_pre
 
 def print_confusion_matrix(y_true, y_pred):
     cm = confusion_matrix(y_true, y_pred)
-    width = int(np.log10(np.max(cm))) + 1
-    tmpl = f'{{:>{width}}}'
-    row = '|   | ' + ' | '.join(tmpl.format(n) for n in range(len(cm))) + ' |'
+    list_actions = [l for l in sorted(ListAction, key=lambda l: l.value) if l.value >= 0]
+    index_mapping = {
+        label_idx: ind for ind, label_idx in enumerate(sorted(set(y_true) | set(y_pred)))}
+    tmpls = []
+    for la in list_actions:
+        if la.value in index_mapping:
+            width_num = int(np.log10(np.max(cm[:, index_mapping[la.value]]))) + 1
+            width = max(width_num, len(la.name))
+        else:
+            width = len(la.name)
+        tmpls.append(f'{{:>{width}}}')
+    tmpl = f' {{:<{max((len(la.name) for la in list_actions))}}} | ' + ' | '.join(tmpls) + ' |'
+
+    row = tmpl.replace('>', '<').format(*([''] + [la.name for la in list_actions]))
     print(row)
     print(f'{"|".join("-" * len(h) for h in row.split("|"))}')
-    for i, cmi in enumerate(cm):
-        print(f'| {i} | ' + ' | '.join(tmpl.format(c) for c in cmi) + ' |')
+    for la in list_actions:
+        print(tmpl.format(*(
+            [la.name] +
+            [cm[index_mapping[la.value]][index_mapping[la2.value]]
+             if la.value in index_mapping and la2.value in index_mapping else 0
+             for la2 in list_actions])))
+    print('(i-th row and j-th column entry indicates the number of samples with '
+          'true label being i-th class and predicted label being j-th class.)')
 
 
 def evaluate_labels(documents_true: List[DocumentWithFeatures], documents_pred: List[DocumentWithFeatures], confusion_matrix=True):
