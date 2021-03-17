@@ -15,7 +15,7 @@ def k_fold_train_predict(documents: List[DocumentWithFeatures], n_splits: int=5,
     predicted_documents = []
     random.seed(123)
     np.random.seed(123)
-    for train_index, test_index in KFold(n_splits=n_splits).split(X=documents):
+    for train_index, test_index in KFold(n_splits=n_splits, shuffle=True).split(X=documents):
         test_indices.append(test_index)
 
         # First, classify transition between consecutive lines
