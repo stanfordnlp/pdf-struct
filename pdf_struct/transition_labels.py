@@ -72,7 +72,6 @@ class DocumentWithFeatures(object):
         _labels = []
         _pointers = []
         _text_boxes = []
-        n_removed = 0
         for i in range(len(labels)):
             if labels[i] != ListAction.EXCLUDED:
                 _labels.append(labels[i])
@@ -81,11 +80,21 @@ class DocumentWithFeatures(object):
                 elif pointers[i] == -1:
                     p = -1
                 else:
-                    p = pointers[i] - n_removed
+                    p = pointers[i]
+                    assert p >= 0
                 _pointers.append(p)
                 _text_boxes.append(text_blocks[i])
             else:
-                n_removed += 1
+                pointers_tmp = []
+                for p in pointers:
+                    assert p != i
+                    if p is None:
+                        pointers_tmp.append(None)
+                    elif p > i:
+                        pointers_tmp.append(p - 1)
+                    else:
+                        pointers_tmp.append(p)
+                pointers = pointers_tmp
         return _text_boxes, _labels, _pointers
 
     @staticmethod
