@@ -19,12 +19,12 @@ class BaseFeatureExtractor(object):
     def extract_features(self, tb1: TextBlock, tb2: TextBlock, tb3: TextBlock, tb4: TextBlock):
         raise NotImplementedError('extract_features should be over written')
 
-    def extract_features_all(self, text_blocks: List[TextBlock], actions: List[ListAction]):
+    def extract_features_all(self, text_blocks: List[TextBlock], actions: Optional[List[ListAction]]):
         self.init_state()
         for i in range(len(text_blocks)):
             tb1 = text_blocks[i - 1] if i != 0 else None
             tb2 = text_blocks[i]
-            if actions[i] == ListAction.ELIMINATE:
+            if actions is None or actions[i] == ListAction.ELIMINATE:
                 tb3 = text_blocks[i + 1] if i + 1 < len(text_blocks) else None
                 tb4 = text_blocks[i + 2] if i + 2 < len(text_blocks) else None
             else:

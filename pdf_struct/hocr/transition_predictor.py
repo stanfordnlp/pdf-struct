@@ -37,12 +37,30 @@ class HOCRDocumentWithFeatures(DocumentWithFeatures):
                 continue
             texts = [tb.text for tb in text_boxes]
 
-            feature_extractor, feats, pointer_feats = cls._extract_features(
-                HOCRFeatureExtractor, text_boxes, _labels, _pointers, dummy_feats)
-
+            feature_extractor, feats, feats_test, pointer_feats = cls._extract_all_features(
+                HOCRFeatureExtractor, text_boxes, _labels, _pointers, dummy_feats
+            )
             documents.append(cls(
-                path, feats, texts, _labels, _pointers, pointer_feats,
+                path, feats, feats_test, texts, _labels, _pointers, pointer_feats,
                 feature_extractor, text_boxes))
+        return documents
+
+    @classmethod
+    def load_pred(cls, path: str) -> List['HOCRDocumentWithFeatures']:
+        with open(path) as fin:
+            html_doc = fin.read()
+        span_boxes_lst = parse_hocr(html_doc)
+
+        documents = []
+        for span_boxes in span_boxes_lst:
+            texts = [tb.text for tb in span_boxes]
+
+            feature_extractor = HOCRFeatureExtractor(span_boxes)
+            feats_test = cls._extract_features(
+                feature_extractor, span_boxes, None)
+            documents.append(cls(
+                path, None, feats_test, texts, None, None, None,
+                feature_extractor, span_boxes))
         return documents
 
 

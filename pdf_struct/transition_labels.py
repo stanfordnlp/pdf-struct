@@ -53,18 +53,30 @@ class ListAction(Enum):
 
 
 class DocumentWithFeatures(object):
-    def __init__(self, path: str, feats: List[List[float]], texts: List[str],
-                 labels: List[ListAction], pointers: List[Optional[int]],
-                 pointer_feats: List[Tuple[int, int, List[float]]],
+    def __init__(self, path: str,
+                 feats: Optional[List[List[float]]],
+                 feats_test: List[List[float]],
+                 texts: List[str],
+                 labels: Optional[List[ListAction]],
+                 pointers: Optional[List[Optional[int]]],
+                 pointer_feats: Optional[List[Tuple[int, int, List[float]]]],
                  feature_extractor: 'pdf_struct.features.BaseFeatureExtractor',
                  text_blocks: List[TextBlock]):
         assert len(feats) == len(texts) == len(labels)
         self.path: str = path
-        self.feats: List[List[float]] = feats
+        # features to be used at train time. This is created with an access
+        # to the labels
+        self.feats: Optional[List[List[float]]] = feats
+        # features to be used at test time. This is created without an access
+        # to the labels
+        self.feats_test: List[List[float]] = feats_test
         self.texts: List[str] = texts
-        self.labels: List[ListAction] = labels
-        self.pointers: List[Optional[int]] = pointers
-        self.pointer_feats: List[Tuple[int, int, List[float]]] = pointer_feats
+        # Ground-truth/predicted labels
+        self.labels: Optional[List[ListAction]] = labels
+        # Ground-truth/predicted pointer labels
+        self.pointers: Optional[List[Optional[int]]] = pointers
+        # this can be None at inference, because it is calculated on the run
+        self.pointer_feats: Optional[List[Tuple[int, int, List[float]]]] = pointer_feats
         self.feature_extractor: 'pdf_struct.features.BaseFeatureExtractor' = feature_extractor
         self.text_blocks: List[TextBlock] = text_blocks
 
@@ -98,26 +110,40 @@ class DocumentWithFeatures(object):
         return _text_boxes, _labels, _pointers
 
     @staticmethod
-    def _extract_features(feature_extractor_cls, text_blocks, labels, pointers, dummy_feats):
+    def _extract_features(feature_extractor, text_blocks, labels):
+        feats = list(feature_extractor.extract_features_all(text_blocks, labels))
+        return feats
+
+    @staticmethod
+    def _extract_pointer_features(feature_extractor, text_blocks, labels, pointers):
+        pointer_feats = []
+        for j, p in enumerate(pointers):
+            if p is not None:
+                assert p >= 0
+                for i in range(j):
+                    if labels[i] == ListAction.DOWN:
+                        feat = feature_extractor.extract_pointer_features(
+                            text_blocks, labels[:j], i, j)
+                        pointer_feats.append((i, j, feat))
+        return pointer_feats
+
+    @classmethod
+    def _extract_all_features(cls, feature_extractor_func, text_blocks, labels, pointers, dummy_feats):
+        assert labels is not None
+        feature_extractor = feature_extractor_func(text_blocks)
         if dummy_feats:
             feature_extractor = None
-            # Do not assign None because some functions relies on its length
             feats = [[]] * len(text_blocks)
+            feats_test = [[]] * len(text_blocks)
             pointer_feats = []
         else:
-            feature_extractor = feature_extractor_cls(text_blocks)
-            feats = list(feature_extractor.extract_features_all(text_blocks, labels))
-            pointer_feats = []
-            for j, p in enumerate(pointers):
-                if p is not None:
-                    assert p >= 0
-                    for i in range(j):
-                        if labels[i] == ListAction.DOWN:
-                            feat = feature_extractor.extract_pointer_features(
-                                text_blocks, labels[:j], i, j)
-                            pointer_feats.append((i, j, feat))
-        return feature_extractor, feats, pointer_feats
-
+            feats = cls._extract_features(
+                feature_extractor, text_blocks, labels)
+            feats_test = cls._extract_features(
+                feature_extractor, text_blocks, None)
+            pointer_feats = cls._extract_pointer_features(
+                feature_extractor, text_blocks, labels, pointers)
+        return feature_extractor, feats, feats_test, pointer_feats
 
 
 def _load_anno(in_path: str, lines: List[str], offset: int) -> List[Tuple[ListAction, Optional[int]]]:

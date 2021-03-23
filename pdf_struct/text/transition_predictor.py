@@ -28,11 +28,26 @@ class TextDocumentWithFeatures(DocumentWithFeatures):
         text_boxes, labels, pointers = cls._filter_text_blocks(text_lines, labels, pointers)
         texts = [tb.text for tb in text_boxes]
 
-        feature_extractor, feats, pointer_feats = cls._extract_features(
+        feature_extractor, feats, feats_test, pointer_feats = cls._extract_all_features(
             PlainTextFeatureExtractor, text_boxes, labels, pointers, dummy_feats)
 
-        return cls(path, feats, texts, labels, pointers, pointer_feats,
+        return cls(path, feats, feats_test, texts, labels, pointers, pointer_feats,
                    feature_extractor, text_boxes)
+
+    @classmethod
+    def load_pred(cls, path: str):
+        with open(path, 'r') as fin:
+            text_lines = TextLine.from_lines([line for line in fin])
+        if len(text_lines) == 0:
+            raise TextDocumentLoadingError('No text boxes found.')
+
+        texts = [tb.text for tb in text_lines]
+
+        feature_extractor = PlainTextFeatureExtractor(text_lines)
+        feats_test = cls._extract_features(feature_extractor, text_lines, None)
+
+        return cls(path, None, feats_test, texts, None, None, None,
+                   feature_extractor, text_lines)
 
 
 def load_texts(base_dir: str, annos: AnnoListType, dummy_feats: bool=False) -> List[TextDocumentWithFeatures]:

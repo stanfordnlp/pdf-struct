@@ -17,12 +17,6 @@ class PDFDocumentLoadingError(ValueError):
 
 
 class PDFDocumentWithFeatures(DocumentWithFeatures):
-    def __init__(self, path: str, feats: list, texts: List[str],
-                 labels: List[ListAction], pointers: List[int],
-                 pointer_feats: List[Tuple[int, int, List[float]]],
-                 feature_extractor, text_boxes: List[TextBox]):
-        super(PDFDocumentWithFeatures, self).__init__(
-            path, feats, texts, labels, pointers, pointer_feats, feature_extractor, text_boxes)
 
     @classmethod
     def load(cls, path: str, labels: List[ListAction], pointers: List[int], dummy_feats: bool=False):
@@ -38,10 +32,27 @@ class PDFDocumentWithFeatures(DocumentWithFeatures):
         text_boxes, labels, pointers = cls._filter_text_blocks(text_boxes, labels, pointers)
         texts = [tb.text for tb in text_boxes]
 
-        feature_extractor, feats, pointer_feats = cls._extract_features(
+        feature_extractor, feats, feats_test, pointer_feats = cls._extract_all_features(
             PDFFeatureExtractor, text_boxes, labels, pointers, dummy_feats)
 
-        return cls(path, feats, texts, labels, pointers, pointer_feats,
+        return cls(path, feats, feats_test, texts, labels, pointers, pointer_feats,
+                   feature_extractor, text_boxes)
+
+    @classmethod
+    def load_pred(cls, path: str):
+        with open(path, 'rb') as fin:
+            text_boxes = list(parse_pdf(fin))
+        if len(text_boxes) == 0:
+            raise PDFDocumentLoadingError('No text boxes found.')
+        # Space size is about 4pt
+        text_boxes = merge_continuous_lines(text_boxes, space_size=4)
+
+        texts = [tb.text for tb in text_boxes]
+
+        feature_extractor = PDFFeatureExtractor(text_boxes)
+        feats_test = cls._extract_features(feature_extractor, text_boxes, None)
+
+        return cls(path, None, feats_test, texts, None, None, None,
                    feature_extractor, text_boxes)
 
 
