@@ -87,7 +87,6 @@ class DocumentWithFeatures(object):
             else:
                 pointers_tmp = []
                 for p in pointers:
-                    assert p != i
                     if p is None:
                         pointers_tmp.append(None)
                     elif p > i:
