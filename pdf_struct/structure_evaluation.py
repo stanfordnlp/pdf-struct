@@ -76,7 +76,11 @@ def _calc_metrics(ys_true: List[List[int]], ys_pred: List[List[int]],
             'micro': {
                 'precision': precision_score(ys_true == rel, ys_pred == rel, zero_division=0),
                 'recall': recall_score(ys_true == rel, ys_pred == rel),
-                'f1': f1_score(ys_true == rel, ys_pred == rel, zero_division=0)
+                'f1': f1_score(ys_true == rel, ys_pred == rel, zero_division=0),
+                'true_positive': int(np.logical_and(ys_true == rel, ys_pred == rel).sum()),
+                'false_positive': int(np.logical_and(ys_true != rel, ys_pred == rel).sum()),
+                'false_negative': int(np.logical_and(ys_true == rel, ys_pred != rel).sum()),
+                'true_negative': int(np.logical_and(ys_true != rel, ys_pred != rel).sum())
             },
             'macro': {
                 'precision': np.nanmean(metrics[:, rel, 0]),
