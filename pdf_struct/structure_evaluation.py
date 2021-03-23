@@ -114,7 +114,7 @@ def print_confusion_matrix(y_true, y_pred):
     tmpls = []
     for la in list_actions:
         if la.value in index_mapping:
-            width_num = int(np.log10(np.max(cm[:, index_mapping[la.value]]))) + 1
+            width_num = int(np.log10(max(1, np.max(cm[:, index_mapping[la.value]])))) + 1
             width = max(width_num, len(la.name))
         else:
             width = len(la.name)
