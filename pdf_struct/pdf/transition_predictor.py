@@ -53,7 +53,7 @@ class PDFDocumentWithFeatures(DocumentWithFeatures):
         feats_test = cls._extract_features(feature_extractor, text_boxes, None)
 
         return cls(path, None, feats_test, texts, None, None, None,
-                   feature_extractor, text_boxes)
+                   feature_extractor, text_boxes, path)
 
 
 def load_pdfs(base_dir: str, annos: AnnoListType, dummy_feats: bool=False) -> List[PDFDocumentWithFeatures]:

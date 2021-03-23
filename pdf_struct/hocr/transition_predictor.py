@@ -42,7 +42,7 @@ class HOCRDocumentWithFeatures(DocumentWithFeatures):
             )
             documents.append(cls(
                 path, feats, feats_test, texts, _labels, _pointers, pointer_feats,
-                feature_extractor, text_boxes))
+                feature_extractor, text_boxes, path))
         return documents
 
     @classmethod

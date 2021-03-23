@@ -47,7 +47,7 @@ class TextDocumentWithFeatures(DocumentWithFeatures):
         feats_test = cls._extract_features(feature_extractor, text_lines, None)
 
         return cls(path, None, feats_test, texts, None, None, None,
-                   feature_extractor, text_lines)
+                   feature_extractor, text_lines, path)
 
 
 def load_texts(base_dir: str, annos: AnnoListType, dummy_feats: bool=False) -> List[TextDocumentWithFeatures]:

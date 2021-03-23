@@ -61,7 +61,8 @@ class DocumentWithFeatures(object):
                  pointers: Optional[List[Optional[int]]],
                  pointer_feats: Optional[List[Tuple[int, int, List[float]]]],
                  feature_extractor: 'pdf_struct.features.BaseFeatureExtractor',
-                 text_blocks: List[TextBlock]):
+                 text_blocks: List[TextBlock],
+                 cv_key: str):
         assert len(feats) == len(texts) == len(labels)
         self.path: str = path
         # features to be used at train time. This is created with an access
@@ -79,6 +80,8 @@ class DocumentWithFeatures(object):
         self.pointer_feats: Optional[List[Tuple[int, int, List[float]]]] = pointer_feats
         self.feature_extractor: 'pdf_struct.features.BaseFeatureExtractor' = feature_extractor
         self.text_blocks: List[TextBlock] = text_blocks
+        # Key to use for CV partitioning
+        self.cv_key: str = cv_key
 
     @staticmethod
     def _filter_text_blocks(text_blocks, labels, pointers):

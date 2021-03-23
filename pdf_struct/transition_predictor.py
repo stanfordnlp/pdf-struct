@@ -1,6 +1,7 @@
 import copy
 import random
 from typing import List, Optional
+from collections import defaultdict
 
 import numpy as np
 from sklearn.ensemble import RandomForestClassifier
@@ -101,12 +102,18 @@ def predict_with_classifiers(clf, clf_ptr, documents: List[DocumentWithFeatures]
 def k_fold_train_predict(documents: List[DocumentWithFeatures], n_splits: int=5, used_features: Optional[List[int]]=None) -> List[DocumentWithFeatures]:
     test_indices = []
     predicted_documents = []
+
+    cv_documents = defaultdict(list)
+    for i, document in enumerate(documents):
+        cv_documents[document.cv_key].append((document, i))
+    cv_documents = list(cv_documents.values())
+
     random.seed(123)
     np.random.seed(123)
-    for train_index, test_index in KFold(n_splits=n_splits, shuffle=True).split(X=documents):
-        test_indices.append(test_index)
-        documents_train = [documents[j] for j in train_index]
-        documents_test = [documents[j] for j in test_index]
+    for train_index, test_index in KFold(n_splits=n_splits, shuffle=True).split(X=cv_documents):
+        test_indices.append([ind for j in test_index for _, ind in cv_documents[j]])
+        documents_train = [document for j in train_index for document, ind in cv_documents[j]]
+        documents_test = [document for j in test_index for document, ind in cv_documents[j]]
         clf, clf_ptr = train_classifiers(documents_train, used_features)
         predicted_documents.extend(
             predict_with_classifiers(clf, clf_ptr, documents_test, used_features))
