@@ -59,9 +59,9 @@ def parse_hocr(html_doc: str) -> List[List[SpanBox]]:
                     )
                     assert 0 <= trans_bbox[0] <= trans_bbox[2]
                     assert 0 <= trans_bbox[1] <= trans_bbox[3]
-                    span_id = f'{td["id"]}_{i}'
                     text = preprocess_text(span.text.strip('\n'))
-                    span_boxes_td.append(SpanBox(text, trans_bbox, {span_id}))
+                    # use span['title'] as a pseudo ID for now
+                    span_boxes_td.append(SpanBox(text, trans_bbox, {span['title']}))
                 # HOCR's geometry unit is point, so ex = 4pt
                 span_boxes_td = merge_continuous_lines(span_boxes_td, space_size=4)
                 if len(span_boxes_td) > 1:
