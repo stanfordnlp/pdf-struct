@@ -14,8 +14,9 @@ from pdf_struct.hocr import load_hocr, export_result
 
 
 @click.command()
+@click.option('-k', '--k-folds', type=int, default=5)
 @click.argument('file-type', type=click.Choice(('hocr', 'txt', 'pdf')))
-def main(file_type: str):
+def main(k_folds: int, file_type: str):
     anno_dir = os.path.join('data', f'anno_{file_type}')
     print(f'Loading annotations from {anno_dir}')
     if file_type == 'hocr':
@@ -34,7 +35,8 @@ def main(file_type: str):
     print(f'Extracted {sum(map(lambda d: len(d.feats), documents))} lines from '
           f'{len(documents)} documents with label distribution: '
           f'{Counter(sum(map(lambda d: d.labels, documents), []))} for evaluation.')
-    documents_pred = transition_predictor.k_fold_train_predict(documents, n_splits=3)
+    documents_pred = transition_predictor.k_fold_train_predict(
+        documents, n_splits=k_folds)
 
     with open(os.path.join('data', f'results_{file_type}.jsonl'), 'w') as fout:
         for d, d_p in zip(documents, documents_pred):
