@@ -60,7 +60,7 @@ def merge_continuous_lines(text_boxes, threshold=0.5, space_size=4):
             if box_type == 'TextBox':
                 merged_text_boxes.append(TextBox(text, bbox, tbi.page, blocks))
             else:
-                merged_text_boxes.append(SpanBox(text, bbox, blocks))
+                merged_text_boxes.append(SpanBox(text, bbox, blocks, tbi.cell_size))
         else:
             merged_text_boxes.append(tbi)
         i = j
