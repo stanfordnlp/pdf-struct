@@ -5,10 +5,11 @@ from typing import List, Tuple
 import tqdm
 
 from pdf_struct.pdf.features import PDFFeatureExtractor
-from pdf_struct.pdf.parser import parse_pdf, merge_continuous_lines, TextBox
+from pdf_struct.pdf.parser import parse_pdf, TextBox
 from pdf_struct.transition_labels import DocumentWithFeatures, ListAction, \
     AnnoListType
 from pdf_struct.utils import get_filename
+from pdf_struct.bbox import merge_continuous_lines
 
 
 class PDFDocumentLoadingError(ValueError):
@@ -29,7 +30,8 @@ class PDFDocumentWithFeatures(DocumentWithFeatures):
             text_boxes = list(parse_pdf(fin))
         if len(text_boxes) == 0:
             raise PDFDocumentLoadingError('No text boxes found.')
-        text_boxes = merge_continuous_lines(text_boxes)
+        # Space size is about 4pt
+        text_boxes = merge_continuous_lines(text_boxes, space_size=4)
         if len(labels) != len(text_boxes):
             raise PDFDocumentLoadingError('Number of rows does not match labels.')
 

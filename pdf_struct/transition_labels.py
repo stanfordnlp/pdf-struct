@@ -2,6 +2,7 @@ import glob
 import os
 from enum import Enum
 from typing import List, Dict, Tuple, Optional
+from collections import defaultdict
 
 import tqdm
 
@@ -119,48 +120,50 @@ class DocumentWithFeatures(object):
 
 
 
-def _load_anno(in_path) -> List[Tuple[ListAction, Optional[int]]]:
+def _load_anno(in_path: str, lines: List[str], offset: int) -> List[Tuple[ListAction, Optional[int]]]:
     ret = []
     root_line_indices = set()
     root_flg = True
-    with open(in_path, 'r') as fin:
-        for i, line in enumerate(fin):
-            line = line.rstrip('\n').split('\t')
-            if len(line) != 3:
-                raise ValueError(
-                    f'Invalid line "{line}" in {i + 1}-th line of "{in_path}".')
-            if not ListAction.contains(line[2]):
-                raise ValueError(
-                    f'Invalid label "{line[2]}" in {i + 1}-th line of "{in_path}".')
-            ptr = int(line[1])
-            if not (-1 <= ptr <= i):
-                raise ValueError(
-                    f'Invalid pointer "{line[1]}" in {i + 1}-th line of "{in_path}".')
-            if ptr == 0:
-                ptr = None
-            elif ptr > 0:
-                ptr = ptr - 1
-            if ptr is not None and ptr > 0 and ret[ptr][0] != ListAction.DOWN:
-                raise ValueError(
-                    f'Pointer is pointing at "{ret[ptr][0]}" in {i + 1}-th line of "{in_path}".')
-            try:
-                l = ListAction.from_key(line[2], ptr)
-            except ValueError as e:
-                raise ValueError(f'{e} in {i + 1}-th line of "{in_path}".')
-            if ptr is not None and ptr in root_line_indices:
-                root_flg = True
-            if root_flg:
-                root_line_indices.add(i)
-            if ptr == -1:
-                ptr = max(root_line_indices)
-            if l == ListAction.DOWN:
-                root_flg = False
-            if ptr == i:
-                print('Pointer pointing at root when it is already in root in '
-                      f'{i + 1}-th line of "{in_path}". Turning it into SAME_LEVEL.')
-                ptr = None
-                l = ListAction.SAME_LEVEL
-            ret.append((l, ptr))
+    for i, line in enumerate(lines):
+        line_num = i + 1 + offset  # for debugging
+        line = line.rstrip('\n').split('\t')
+        if len(line) != 3:
+            raise ValueError(
+                f'Invalid line "{line}" in {line_num}-th line of "{in_path}".')
+        if not ListAction.contains(line[2]):
+            raise ValueError(
+                f'Invalid label "{line[2]}" in {line_num}-th line of "{in_path}".')
+        ptr = int(line[1])
+        if offset > 0 and ptr > 0:
+            ptr -= offset
+        if not (-1 <= ptr <= i):
+            raise ValueError(
+                f'Invalid pointer "{line[1]}" in {line_num}-th line of "{in_path}".')
+        if ptr == 0:
+            ptr = None
+        elif ptr > 0:
+            ptr = ptr - 1
+        if ptr is not None and ptr > 0 and ret[ptr][0] != ListAction.DOWN:
+            raise ValueError(
+                f'Pointer is pointing at "{ret[ptr][0]}" in {line_num}-th line of "{in_path}".')
+        try:
+            l = ListAction.from_key(line[2], ptr)
+        except ValueError as e:
+            raise ValueError(f'{e} in {line_num}-th line of "{in_path}".')
+        if ptr is not None and ptr in root_line_indices:
+            root_flg = True
+        if root_flg:
+            root_line_indices.add(i)
+        if ptr == -1:
+            ptr = max(root_line_indices)
+        if l == ListAction.DOWN:
+            root_flg = False
+        if ptr == i:
+            print('Pointer pointing at root when it is already in root in '
+                  f'{line_num}-th line of "{in_path}". Turning it into SAME_LEVEL.')
+            ptr = None
+            l = ListAction.SAME_LEVEL
+        ret.append((l, ptr))
     return ret
 
 
@@ -170,7 +173,32 @@ AnnoListType = Dict[str, List[Tuple[ListAction, Optional[int]]]]
 def load_annos(base_dir: str) -> AnnoListType:
     annos = dict()
     for path in tqdm.tqdm(glob.glob(os.path.join(base_dir, '*.tsv'))):
-        a = _load_anno(path)
+        with open(path, 'r') as fin:
+            lines = [l for l in fin]
+        a = _load_anno(path, lines, offset=0)
         filename = get_filename(path)
         annos[filename] = a
     return annos
+
+
+def load_hocr_annos(base_dir: str) -> AnnoListType:
+    annos = defaultdict(list)
+    for path in tqdm.tqdm(glob.glob(os.path.join(base_dir, '*.tsv'))):
+        filename = get_filename(path)
+        with open(path, 'r') as fin:
+            cur_id = None
+            cur_idx = 0
+            for i, line in enumerate(fin):
+                if line[:5] != cur_id:
+                    if cur_id is not None:
+                        assert len(lines) > 1
+                        a = _load_anno(path, lines, offset=cur_idx)
+                        annos[filename].extend(a)
+                    lines = []
+                    cur_id = line[:5]
+                    cur_idx = i
+                lines.append(line)
+        assert len(lines) > 1
+        a = _load_anno(path, lines, offset=cur_idx)
+        annos[filename].extend(a)
+    return dict(annos)

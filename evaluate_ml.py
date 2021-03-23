@@ -10,17 +10,23 @@ from pdf_struct import transition_labels, transition_predictor
 from pdf_struct.pdf import load_pdfs
 from pdf_struct.structure_evaluation import evaluate_structure, evaluate_labels
 from pdf_struct.text import load_texts
+from pdf_struct.hocr import load_hocr, export_result
 
 
 @click.command()
-@click.argument('file-type', type=click.Choice(('txt', 'pdf')))
+@click.argument('file-type', type=click.Choice(('hocr', 'txt', 'pdf')))
 def main(file_type: str):
     anno_dir = os.path.join('data', f'anno_{file_type}')
     print(f'Loading annotations from {anno_dir}')
-    annos = transition_labels.load_annos(anno_dir)
+    if file_type == 'hocr':
+        annos = transition_labels.load_hocr_annos(anno_dir)
+    else:
+        annos = transition_labels.load_annos(anno_dir)
 
     print('Loading and extracting features from raw files')
-    if file_type == 'pdf':
+    if file_type == 'hocr':
+        documents = load_hocr(os.path.join('data', 'raw'), annos)
+    elif file_type == 'pdf':
         documents = load_pdfs(os.path.join('data', 'raw'), annos)
     else:
         documents = load_texts(os.path.join('data', 'raw'), annos)
@@ -28,7 +34,7 @@ def main(file_type: str):
     print(f'Extracted {sum(map(lambda d: len(d.feats), documents))} lines from '
           f'{len(documents)} documents with label distribution: '
           f'{Counter(sum(map(lambda d: d.labels, documents), []))} for evaluation.')
-    documents_pred = transition_predictor.k_fold_train_predict(documents)
+    documents_pred = transition_predictor.k_fold_train_predict(documents, n_splits=3)
 
     with open(os.path.join('data', f'results_{file_type}.jsonl'), 'w') as fout:
         for d, d_p in zip(documents, documents_pred):
@@ -54,6 +60,8 @@ def main(file_type: str):
             fout.write('\n')
     print(json.dumps(evaluate_structure(documents, documents_pred), indent=2))
     print(json.dumps(evaluate_labels(documents, documents_pred), indent=2))
+    if file_type == 'hocr':
+        export_result(documents_pred, os.path.join('data', f'export_hocr'))
 
 
 if __name__ == '__main__':
