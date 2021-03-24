@@ -52,6 +52,7 @@ def export_result(cells: List[HOCRDocumentWithFeatures], out_dir: str):
                 for b in cell.text_blocks[i].blocks:
                     continual_ = sorted((set(continual) | cell.text_blocks[i].blocks) - {b})
                     spans[b] = {
+                        'text': cell.text_blocks[i].text,
                         'continual': continual_,
                         'siblings': siblings,
                         'ancestors': ancestors,
