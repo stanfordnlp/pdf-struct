@@ -36,7 +36,7 @@ class PDFDocumentWithFeatures(DocumentWithFeatures):
             PDFFeatureExtractor, text_boxes, labels, pointers, dummy_feats)
 
         return cls(path, feats, feats_test, texts, labels, pointers, pointer_feats,
-                   feature_extractor, text_boxes)
+                   feature_extractor, text_boxes, path)
 
     @classmethod
     def load_pred(cls, path: str):
