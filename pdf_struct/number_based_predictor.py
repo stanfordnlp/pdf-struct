@@ -11,7 +11,7 @@ def predict_transitions_numbering(document: DocumentWithFeatures) -> DocumentWit
 
     labels = []
     pointers = []
-    for i in range(len(document.feats)):
+    for i in range(document.n_blocks):
         candidates = SectionNumber.extract_section_number(document.texts[i])
         if len(candidates) == 0:
             labels.append(ListAction.CONTINUOUS)

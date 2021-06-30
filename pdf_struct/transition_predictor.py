@@ -7,14 +7,15 @@ import numpy as np
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import KFold
 
-from pdf_struct.transition_labels import ListAction, DocumentWithFeatures
+from pdf_struct.transition_labels import ListAction
+from pdf_struct.document import Document
 
 
-def train_classifiers(documents: List[DocumentWithFeatures], used_features: Optional[List[int]]=None):
+def train_classifiers(documents: List[Document], used_features: Optional[List[int]]=None):
     used_features = None if used_features is None else np.array(used_features)
 
     # First, classify transition between consecutive lines
-    X_train = np.array(sum([d.feats for d in documents], []),
+    X_train = np.array(sum([d.feature_array for d in documents], []),
                        dtype=np.float64)
     y_train = np.array(
         [l.value for d in documents for l in d.labels], dtype=int)
@@ -25,20 +26,19 @@ def train_classifiers(documents: List[DocumentWithFeatures], used_features: Opti
 
     # Next, predict pointers
     X_train = np.array(
-        [f[2] for d in documents for f in d.pointer_feats],
+        [f for d in documents for f in d.pointer_feats_array],
         dtype=np.float64)
     y_train = np.array(
-        [f[0] == d.pointers[f[1]] for d in documents for f in
-         d.pointer_feats],
+        [p == d.pointers[c] for d in documents for p, c in d.pointer_candidates],
         dtype=int)
     clf_ptr = RandomForestClassifier().fit(X_train, y_train)
     return clf, clf_ptr
 
 
-def predict_with_classifiers(clf, clf_ptr, documents: List[DocumentWithFeatures], used_features: Optional[List[int]]=None) -> List[DocumentWithFeatures]:
+def predict_with_classifiers(clf, clf_ptr, documents: List[Document], used_features: Optional[List[int]]=None) -> List[Document]:
     used_features = None if used_features is None else np.array(used_features)
 
-    X_test = np.array(sum([d.feats_test for d in documents], []),
+    X_test = np.array(sum([d.feature_array_test for d in documents], []),
                       dtype=np.float64)
     if used_features is not None:
         X_test = X_test[:, used_features]
@@ -49,9 +49,8 @@ def predict_with_classifiers(clf, clf_ptr, documents: List[DocumentWithFeatures]
     for document in documents:
         d = copy.deepcopy(document)
         d.labels = [ListAction(yi) for yi in
-                    y_pred[cum_j:cum_j + len(document.feats)]]
-
-        d.feature_extractor.init_state()
+                    y_pred[cum_j:cum_j + document.n_blocks]]
+        states = dict()
         for i in range(len(d.text_blocks)):
             tb1 = d.text_blocks[i - 1] if i != 0 else None
             tb2 = d.text_blocks[i]
@@ -70,8 +69,8 @@ def predict_with_classifiers(clf, clf_ptr, documents: List[DocumentWithFeatures]
                     d.text_blocks) else None
             # still execute extract_features even if d.labels[i] != ListAction.ELIMINATE
             # to make the state consistent
-            feat = np.array([
-                d.feature_extractor.extract_features(tb1, tb2, tb3, tb4)])
+            feat, states = d.feature_extractor.extract_features(tb1, tb2, tb3, tb4, states)
+            feat = np.array([d.unpack_features(feat)])
             if used_features is not None:
                 feat = feat[:, used_features]
             if d.labels[i] != ListAction.ELIMINATE:
@@ -86,7 +85,7 @@ def predict_with_classifiers(clf, clf_ptr, documents: List[DocumentWithFeatures]
                     if d.labels[i] == ListAction.DOWN:
                         feat = d.feature_extractor.extract_pointer_features(
                             d.text_blocks, d.labels[:j], i, j)
-                        X_test_ptr.append(feat)
+                        X_test_ptr.append(d.unpack_features(feat))
                         ptr_candidates.append(i)
             if len(X_test_ptr) > 0:
                 pointers.append(ptr_candidates[np.argmax(
@@ -95,11 +94,11 @@ def predict_with_classifiers(clf, clf_ptr, documents: List[DocumentWithFeatures]
                 pointers.append(-1)
         d.pointers = pointers
         predicted_documents.append(d)
-        cum_j += len(document.feats)
+        cum_j += document.n_blocks
     return predicted_documents
 
 
-def k_fold_train_predict(documents: List[DocumentWithFeatures], n_splits: int=5, used_features: Optional[List[int]]=None) -> List[DocumentWithFeatures]:
+def k_fold_train_predict(documents: List[Document], n_splits: int=5, used_features: Optional[List[int]]=None) -> List[Document]:
     test_indices = []
     predicted_documents = []
 

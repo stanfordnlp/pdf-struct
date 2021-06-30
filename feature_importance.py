@@ -41,13 +41,12 @@ def main(file_type: str, search_method: str, n_rounds: int, n_jobs: int):
     else:
         documents = load_texts(os.path.join('data', 'raw'), annos)
 
-    n_features = len(documents[0].feats[0])
     if n_rounds <= 0:
         if search_method[:4] == 'incr':
-            n_rounds = n_features
+            n_rounds = documents[0].n_features
         else:
-            n_rounds = n_features - 1
-    all_feature_indices = set(range(n_features))
+            n_rounds = documents[0].n_features - 1
+    all_feature_indices = set(range(documents[0].n_features))
     results = []
     cur_feature_indices = set()
     for round in range(n_rounds):

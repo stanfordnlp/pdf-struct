@@ -5,7 +5,7 @@ from typing import List
 
 import numpy as np
 
-from pdf_struct.hocr.transition_predictor import HOCRDocumentWithFeatures
+from pdf_struct.hocr.document import HOCRDocumentWithFeatures
 from pdf_struct.structure_evaluation import create_hierarchy_matrix
 
 

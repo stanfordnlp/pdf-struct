@@ -4,7 +4,7 @@ from typing import Tuple, List, Set
 from bs4 import BeautifulSoup
 
 from pdf_struct.preprocessing import preprocess_text
-from pdf_struct.transition_labels import TextBlock
+from pdf_struct.document import TextBlock
 from pdf_struct.bbox import merge_continuous_lines
 
 

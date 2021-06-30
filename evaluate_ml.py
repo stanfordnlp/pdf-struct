@@ -32,7 +32,7 @@ def main(k_folds: int, file_type: str):
     else:
         documents = load_texts(os.path.join('data', 'raw'), annos)
 
-    print(f'Extracted {sum(map(lambda d: len(d.feats), documents))} lines from '
+    print(f'Extracted {sum(map(lambda d: d.n_blocks, documents))} lines from '
           f'{len(documents)} documents with label distribution: '
           f'{Counter(sum(map(lambda d: d.labels, documents), []))} for evaluation.')
     documents_pred = transition_predictor.k_fold_train_predict(
@@ -48,7 +48,7 @@ def main(k_folds: int, file_type: str):
             fout.write(json.dumps({
                 'path': d.path,
                 'texts': d.texts,
-                'features': [list(map(float, f)) for f in d.feats],
+                'features': d.feature_array,
                 'transition_prediction_accuracy': transition_prediction_accuracy,
                 'ground_truth': {
                     'labels': [l.name for l in d.labels],

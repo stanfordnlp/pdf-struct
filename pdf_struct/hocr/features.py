@@ -3,9 +3,9 @@ from typing import Optional, List
 import numpy as np
 import regex as re
 
-from pdf_struct import features
 from pdf_struct.clustering import cluster_positions
 from pdf_struct.clustering import get_margins
+from pdf_struct.feature_extractor import BaseFeatureExtractor
 from pdf_struct.hocr.parser import SpanBox
 from pdf_struct.listing import NumberedListState, SectionNumber
 from pdf_struct.utils import pairwise
@@ -32,7 +32,7 @@ def longest_common_substring(s1, s2):
     return s1[x_longest - longest: x_longest]
 
 
-class HOCRFeatureExtractor(features.BaseFeatureExtractor):
+class HOCRFeatureExtractor(BaseFeatureExtractor):
     def __init__(self, text_boxes: List[SpanBox]):
         self.text_boxes = text_boxes
         # bbox is [x_left, y_bottom, x_right, y_top] in points with
