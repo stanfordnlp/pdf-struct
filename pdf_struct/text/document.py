@@ -10,7 +10,7 @@ from pdf_struct.listing import get_text_body_indent
 from pdf_struct.preprocessing import preprocess_text
 from pdf_struct.text.features import PlainTextFeatureExtractor
 from pdf_struct.transition_labels import ListAction, \
-    AnnoListType
+    AnnoListType, filter_text_blocks
 from pdf_struct.utils import get_filename, groupwise
 
 
@@ -54,13 +54,13 @@ class TextDocumentWithFeatures(Document):
     @classmethod
     def load(cls, path: str, labels: List[ListAction], pointers: List[int], dummy_feats: bool=False):
         with open(path, 'r') as fin:
-            text_lines = TextLine.from_lines([line for line in fin])
-        if len(text_lines) == 0:
+            text_boxes = TextLine.from_lines([line for line in fin])
+        if len(text_boxes) == 0:
             raise TextDocumentLoadingError('No text boxes found.')
-        if len(labels) != len(text_lines):
+        if len(labels) != len(text_boxes):
             raise TextDocumentLoadingError('Number of rows does not match labels.')
 
-        text_boxes, labels, pointers = cls._filter_text_blocks(text_lines, labels, pointers)
+        text_boxes, labels, pointers = filter_text_blocks(text_boxes, labels, pointers)
         texts = [tb.text for tb in text_boxes]
 
         feature_extractor, feats, feats_test, pointer_feats, pointer_candidates = PlainTextFeatureExtractor.initialize_and_extract_all_features(
