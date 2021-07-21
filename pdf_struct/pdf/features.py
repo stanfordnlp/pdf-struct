@@ -86,11 +86,11 @@ class PDFFeatureExtractor(BaseFeatureExtractor):
 
     @single_input_feature([1])
     def header_region(self, tb):
-        return tb.bbox[3] > self.header_thresh
+        return bool(tb.bbox[3] > self.header_thresh)
 
     @single_input_feature([1])
     def footer_region(self, tb):
-        return tb.bbox[1] < self.footer_thresh
+        return bool(tb.bbox[1] < self.footer_thresh)
 
     @pairwise_feature([(0, 1), (1, 2)])
     def line_break(self, tb1, tb2):

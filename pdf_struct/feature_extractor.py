@@ -67,7 +67,7 @@ def single_input_feature(targets: List[int], name=None):
             features = dict()
             for i in targets:
                 response = func(self, tbs[i])
-                if isinstance(response, (int, float)):
+                if isinstance(response, (int, float, bool)):
                     features[str(i + 1)] = response
                 elif isinstance(response, (tuple, list)):
                     features.update({
@@ -79,6 +79,10 @@ def single_input_feature(targets: List[int], name=None):
                     features.update({
                         f'{n}_{i}': val for n, val in response.items()
                     })
+                else:
+                    raise ValueError(
+                        'Functions decorated with @feature must return one of int, float, bool, '
+                        f'tuple, list or dict, but "{name}" returned {type(response)}.')
             return features
 
         _new_func._prop = {'name': name, 'type': 'feature'}
