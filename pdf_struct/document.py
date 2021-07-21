@@ -57,6 +57,10 @@ class Document(object):
     def n_features(self):
         return sum(map(len, self.feats.values()))
 
+    @property
+    def n_pointer_features(self):
+        return None if self.pointer_feats is None else sum(map(len, self.pointer_feats.values()))
+
     @staticmethod
     def _create_feature_array(feats) -> Optional[List[List[float]]]:
         if feats is None:

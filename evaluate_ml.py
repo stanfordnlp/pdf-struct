@@ -35,6 +35,8 @@ def main(k_folds: int, file_type: str):
     print(f'Extracted {sum(map(lambda d: d.n_blocks, documents))} lines from '
           f'{len(documents)} documents with label distribution: '
           f'{Counter(sum(map(lambda d: d.labels, documents), []))} for evaluation.')
+    print(f'Extracted {documents[0].n_features}-dim features and '
+          f'{documents[0].n_pointer_features}-dim pointer features.')
     documents_pred = transition_predictor.k_fold_train_predict(
         documents, n_splits=k_folds)
 
