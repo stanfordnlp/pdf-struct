@@ -81,7 +81,7 @@ def single_input_feature(targets: List[int], name=None):
                     })
                 else:
                     raise ValueError(
-                        'Functions decorated with @feature must return one of int, float, bool, '
+                        'Functions decorated with @single_input_feature must return one of int, float, bool, '
                         f'tuple, list or dict, but "{name}" returned {type(response)}.')
             return features
 
@@ -113,7 +113,7 @@ def pairwise_feature(pairs: List[Tuple[int, int]], name=None):
             features = dict()
             for pair0, pair1 in pairs:
                 response = func(self, tbs[pair0], tbs[pair1])
-                if isinstance(response, (int, float)):
+                if isinstance(response, (int, float, bool)):
                     features[f'{pair0 + 1}_{pair1 + 1}'] = response
                 elif isinstance(response, (tuple, list)):
                     features.update({
@@ -125,6 +125,11 @@ def pairwise_feature(pairs: List[Tuple[int, int]], name=None):
                     features.update({
                         f'{n}_{pair0 + 1}_{pair1 + 1}': val for n, val in response.items()
                     })
+                else:
+                    raise ValueError(
+                        'Functions decorated with @pairwise_feature must return '
+                        'one of int, float, bool, tuple, list or dict, but '
+                        f'"{name}" returned {type(response)}.')
             return features
 
         _new_func._prop = {'name': name, 'type': 'feature'}
