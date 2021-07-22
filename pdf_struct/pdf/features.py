@@ -194,7 +194,7 @@ class PDFFeatureExtractor(BaseFeatureExtractor):
 
     @pairwise_feature([(0, 1), (1, 2)])
     def colon_ish(self, tb1, tb2):
-        return features.whereas(_gt(tb1), _gt(tb2))
+        return features.colon_ish(_gt(tb1), _gt(tb2))
 
     @pairwise_feature([(0, 1), (1, 2)])
     def punctuated(self, tb1, tb2):
