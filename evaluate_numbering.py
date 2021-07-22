@@ -5,9 +5,9 @@ import click
 
 from pdf_struct import transition_labels
 from pdf_struct.number_based_predictor import predict_transitions_numbering
-from pdf_struct.pdf import load_pdfs
+from pdf_struct.pdf import load_pdfs_from_directory
 from pdf_struct.structure_evaluation import evaluate_structure, evaluate_labels
-from pdf_struct.text import load_texts
+from pdf_struct.text import load_texts_from_directory
 
 
 @click.command()
@@ -19,9 +19,9 @@ def main(file_type: str):
 
     print('Loading and extracting features from raw files')
     if file_type == 'pdf':
-        documents = load_pdfs(os.path.join('data', 'raw'), annos, dummy_feats=True)
+        documents = load_pdfs_from_directory(os.path.join('data', 'raw'), annos, dummy_feats=True)
     else:
-        documents = load_texts(os.path.join('data', 'raw'), annos, dummy_feats=True)
+        documents = load_texts_from_directory(os.path.join('data', 'raw'), annos, dummy_feats=True)
 
     documents_pred = [predict_transitions_numbering(document)
                       for document in documents]

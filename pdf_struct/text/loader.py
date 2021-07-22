@@ -50,42 +50,40 @@ class TextDocumentLoadingError(ValueError):
     pass
 
 
-class TextDocumentWithFeatures(Document):
-    @classmethod
-    def load(cls, path: str, labels: List[ListAction], pointers: List[int], dummy_feats: bool=False):
-        with open(path, 'r') as fin:
-            text_boxes = TextLine.from_lines([line for line in fin])
-        if len(text_boxes) == 0:
-            raise TextDocumentLoadingError('No text boxes found.')
-        if len(labels) != len(text_boxes):
-            raise TextDocumentLoadingError('Number of rows does not match labels.')
+def load_text_document(path: str, labels: List[ListAction], pointers: List[int], dummy_feats: bool=False):
+    with open(path, 'r') as fin:
+        text_boxes = TextLine.from_lines([line for line in fin])
+    if len(text_boxes) == 0:
+        raise TextDocumentLoadingError('No text boxes found.')
+    if len(labels) != len(text_boxes):
+        raise TextDocumentLoadingError('Number of rows does not match labels.')
 
-        text_boxes, labels, pointers = filter_text_blocks(text_boxes, labels, pointers)
-        texts = [tb.text for tb in text_boxes]
+    text_boxes, labels, pointers = filter_text_blocks(text_boxes, labels, pointers)
+    texts = [tb.text for tb in text_boxes]
 
-        feature_extractor, feats, feats_test, pointer_feats, pointer_candidates = PlainTextFeatureExtractor.initialize_and_extract_all_features(
-            text_boxes, labels, pointers, dummy_feats, text_boxes)
+    feature_extractor, feats, feats_test, pointer_feats, pointer_candidates = PlainTextFeatureExtractor.initialize_and_extract_all_features(
+        text_boxes, labels, pointers, dummy_feats, text_boxes)
 
-        return cls(path, feats, feats_test, texts, labels, pointers, pointer_feats, pointer_candidates,
-                   feature_extractor, text_boxes, path)
+    return Document(path, feats, feats_test, texts, labels, pointers,
+                    pointer_feats, pointer_candidates, feature_extractor,
+                    text_boxes, path)
 
-    @classmethod
-    def load_pred(cls, path: str):
-        with open(path, 'r') as fin:
-            text_lines = TextLine.from_lines([line for line in fin])
-        if len(text_lines) == 0:
-            raise TextDocumentLoadingError('No text boxes found.')
+def load_text_document_for_prediction(path: str):
+    with open(path, 'r') as fin:
+        text_lines = TextLine.from_lines([line for line in fin])
+    if len(text_lines) == 0:
+        raise TextDocumentLoadingError('No text boxes found.')
 
-        texts = [tb.text for tb in text_lines]
+    texts = [tb.text for tb in text_lines]
 
-        feature_extractor = PlainTextFeatureExtractor(text_lines)
-        feats_test = feature_extractor.extract_features_all(text_lines, None)
+    feature_extractor = PlainTextFeatureExtractor(text_lines)
+    feats_test = feature_extractor.extract_features_all(text_lines, None)
 
-        return cls(path, None, feats_test, texts, None, None, None, None,
-                   feature_extractor, text_lines, path)
+    return Document(path, None, feats_test, texts, None, None, None, None,
+                    feature_extractor, text_lines, path)
 
 
-def load_texts(base_dir: str, annos: AnnoListType, dummy_feats: bool=False) -> List[TextDocumentWithFeatures]:
+def load_texts_from_directory(base_dir: str, annos: AnnoListType, dummy_feats: bool=False) -> List[Document]:
     paths = glob.glob(os.path.join(base_dir, '*.txt'))
     # filter first for tqdm to work properly
     paths = [path for path in paths if get_filename(path) in annos]
@@ -93,7 +91,7 @@ def load_texts(base_dir: str, annos: AnnoListType, dummy_feats: bool=False) -> L
     for path in tqdm.tqdm(paths):
         anno = annos[get_filename(path)]
         try:
-            documents.append(TextDocumentWithFeatures.load(
+            documents.append(load_text_document(
                 path, [a[0] for a in anno], [a[1] for a in anno], dummy_feats=dummy_feats))
         except TextDocumentLoadingError as e:
             print(f'Loading "{path}" failed. {e}')

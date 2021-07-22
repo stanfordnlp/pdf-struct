@@ -6,9 +6,9 @@ import click
 
 from pdf_struct import transition_labels
 from pdf_struct.clustering import cluster_positions
-from pdf_struct.pdf import load_pdfs
+from pdf_struct.pdf import load_pdfs_from_directory
 from pdf_struct.structure_evaluation import evaluate_structure, evaluate_labels
-from pdf_struct.text import load_texts
+from pdf_struct.text import load_texts_from_directory
 from pdf_struct.transition_predictor import ListAction
 from pdf_struct.utils import pairwise
 
@@ -22,7 +22,7 @@ def main(file_type: str):
 
     print('Loading and extracting features from raw files')
     if file_type == 'pdf':
-        documents = load_pdfs(os.path.join('data', 'raw'), annos, dummy_feats=True)
+        documents = load_pdfs_from_directory(os.path.join('data', 'raw'), annos, dummy_feats=True)
         documents_pred = []
         for document in documents:
             horizontal_thresh = 10  # 10 points = 1em
@@ -74,7 +74,7 @@ def main(file_type: str):
             documents_pred.append(d)
 
     else:
-        documents = load_texts(os.path.join('data', 'raw'), annos, dummy_feats=True)
+        documents = load_texts_from_directory(os.path.join('data', 'raw'), annos, dummy_feats=True)
         documents_pred = []
         for document in documents:
             labels = []

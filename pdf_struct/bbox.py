@@ -5,7 +5,7 @@ from functools import reduce
 def merge_continuous_lines(text_boxes, threshold=0.5, space_size=4):
     # FIXME: Ugly workaround for circular import
     # fix the general project structures
-    from pdf_struct.pdf.document import TextBox
+    from pdf_struct.pdf.loader import TextBox
     from pdf_struct.hocr.parser import SpanBox
 
     # text_boxes must implement .bbox where bbox is

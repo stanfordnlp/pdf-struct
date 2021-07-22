@@ -7,9 +7,9 @@ import numpy as np
 from sklearn.metrics import accuracy_score
 
 from pdf_struct import transition_labels, transition_predictor
-from pdf_struct.pdf import load_pdfs
+from pdf_struct.pdf import load_pdfs_from_directory
 from pdf_struct.structure_evaluation import evaluate_structure, evaluate_labels
-from pdf_struct.text import load_texts
+from pdf_struct.text import load_texts_from_directory
 from pdf_struct.hocr import load_hocr, export_result
 
 
@@ -28,9 +28,9 @@ def main(k_folds: int, file_type: str):
     if file_type == 'hocr':
         documents = load_hocr(os.path.join('data', 'raw'), annos)
     elif file_type == 'pdf':
-        documents = load_pdfs(os.path.join('data', 'raw'), annos)
+        documents = load_pdfs_from_directory(os.path.join('data', 'raw'), annos)
     else:
-        documents = load_texts(os.path.join('data', 'raw'), annos)
+        documents = load_texts_from_directory(os.path.join('data', 'raw'), annos)
 
     print(f'Extracted {sum(map(lambda d: d.n_blocks, documents))} lines from '
           f'{len(documents)} documents with label distribution: '

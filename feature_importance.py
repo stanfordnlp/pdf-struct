@@ -6,9 +6,9 @@ from joblib import Parallel, delayed
 
 
 from pdf_struct import transition_labels, transition_predictor
-from pdf_struct.pdf import load_pdfs
+from pdf_struct.pdf import load_pdfs_from_directory
 from pdf_struct.structure_evaluation import evaluate_structure, evaluate_labels
-from pdf_struct.text import load_texts
+from pdf_struct.text import load_texts_from_directory
 
 
 def single_run(documents, feature_indices, i):
@@ -37,9 +37,9 @@ def main(file_type: str, search_method: str, n_rounds: int, n_jobs: int):
 
     print('Loading and extracting features from raw files')
     if file_type == 'pdf':
-        documents = load_pdfs(os.path.join('data', 'raw'), annos)
+        documents = load_pdfs_from_directory(os.path.join('data', 'raw'), annos)
     else:
-        documents = load_texts(os.path.join('data', 'raw'), annos)
+        documents = load_texts_from_directory(os.path.join('data', 'raw'), annos)
 
     if n_rounds <= 0:
         if search_method[:4] == 'incr':

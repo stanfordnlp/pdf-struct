@@ -1,1 +1,1 @@
-from pdf_struct.text.document import load_texts, TextLine
+from pdf_struct.text.loader import load_texts_from_directory, TextLine
