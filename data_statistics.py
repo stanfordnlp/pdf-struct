@@ -4,9 +4,8 @@ import os
 import click
 import numpy as np
 
-from pdf_struct.transition_labels import load_annos, ListAction
-from pdf_struct.pdf import load_pdfs_from_directory
-from pdf_struct.text import load_texts_from_directory
+from pdf_struct.core.transition_labels import load_annos, ListAction
+from pdf_struct import loader
 
 
 def get_max_depth(document):
@@ -40,9 +39,9 @@ def main(file_type: str):
 
     print('Loading and extracting features from raw files')
     if file_type == 'pdf':
-        documents = load_pdfs_from_directory(os.path.join('data', 'raw'), annos, dummy_feats=True)
+        documents = loader.pdf.load_from_directory(os.path.join('data', 'raw'), annos)
     else:
-        documents = load_texts_from_directory(os.path.join('data', 'raw'), annos, dummy_feats=True)
+        documents = loader.text.load_from_directory(os.path.join('data', 'raw'), annos)
 
     max_depths = [get_max_depth(d) for d in documents]
     print(json.dumps({

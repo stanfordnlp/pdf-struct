@@ -4,16 +4,13 @@ import os
 import click
 import tqdm
 
-from pdf_struct.pdf import parse_pdf
-from pdf_struct.text import TextLine
-from pdf_struct.bbox import merge_continuous_lines
-from pdf_struct.hocr import parse_hocr
+from pdf_struct import loader
 
 
 def process_hocr(in_path, out_path):
     with open(in_path) as fin:
         html_doc = fin.read()
-    span_boxes_lst = parse_hocr(html_doc)
+    span_boxes_lst = loader.hocr.parse_hocr(html_doc)
 
     with open(out_path, 'w') as fout:
         for i, span_boxes in enumerate(span_boxes_lst):
@@ -23,7 +20,10 @@ def process_hocr(in_path, out_path):
 
 def process_pdf(in_path, out_path):
     with open(in_path, 'rb') as fin:
-        text_boxes = merge_continuous_lines(list(parse_pdf(fin)), space_size=4)
+        text_boxes = list(loader.pdf.parse_pdf(fin))
+
+    text_boxes = loader.pdf.TextBox.merge_continuous_lines(
+        text_boxes, space_size=4)
 
     with open(out_path, 'w') as fout:
         for tb in text_boxes:
@@ -32,7 +32,7 @@ def process_pdf(in_path, out_path):
 
 def process_text(in_path, out_path):
     with open(in_path) as fin:
-        text_lines = TextLine.from_lines([line for line in fin])
+        text_lines = loader.text.TextLine.from_lines([line for line in fin])
     with open(out_path, 'w') as fout:
         for line in text_lines:
             fout.write(f'{line.text}\t0\t\n')

@@ -1,7 +1,7 @@
 from typing import List, Tuple, Optional, Dict
 from itertools import chain
 
-from pdf_struct.transition_labels import ListAction
+from pdf_struct.core.transition_labels import ListAction
 
 
 class TextBlock(object):
@@ -12,18 +12,28 @@ class TextBlock(object):
 class Document(object):
     def __init__(self,
                  path: str,
-                 feats: Optional[Dict[str, Dict[str, List[float]]]],
-                 feats_test: Dict[str, Dict[str, List[float]]],
                  texts: List[str],
+                 text_blocks: List[TextBlock],
                  labels: Optional[List[ListAction]],
                  pointers: Optional[List[Optional[int]]],
-                 pointer_feats: Optional[Dict[str, Dict[str, List[float]]]],
-                 pointer_candidates: Optional[List[Tuple[int, int]]],
-                 feature_extractor,
-                 text_blocks: List[TextBlock],
                  cv_key: str):
         assert len(texts) == len(labels)
         self.path: str = path
+        self.texts: List[str] = texts
+        self.text_blocks: List[TextBlock] = text_blocks
+        # Ground-truth/predicted labels
+        self.labels: Optional[List[ListAction]] = labels
+        # Ground-truth/predicted pointer labels
+        self.pointers: Optional[List[Optional[int]]] = pointers
+        # Key to use for CV partitioning
+        self.cv_key: str = cv_key
+
+    def set_features(self,
+                     feats: Optional[Dict[str, Dict[str, List[float]]]],
+                     feats_test: Dict[str, Dict[str, List[float]]],
+                     pointer_feats: Optional[Dict[str, Dict[str, List[float]]]],
+                     pointer_candidates: Optional[List[Tuple[int, int]]],
+                     feature_extractor):
         # features to be used at train time. This is created with an access
         # to the labels
         self.feats: Optional[Dict[str, Dict[str, List[float]]]] = feats
@@ -32,12 +42,7 @@ class Document(object):
         # to the labels
         self.feats_test: Dict[str, Dict[str, List[float]]] = feats_test
         self.feature_array_test = self._create_feature_array(feats_test)
-        self.texts: List[str] = texts
-        # Ground-truth/predicted labels
-        self.labels: Optional[List[ListAction]] = labels
-        # Ground-truth/predicted pointer labels
-        self.pointers: Optional[List[Optional[int]]] = pointers
-        # this can be None at inference, because it is calculated on the run
+
         self.pointer_feats: Optional[Dict[str, Dict[str, List[float]]]] = pointer_feats
         if len(pointer_feats) > 0:
             self.pointer_feats_array = self._create_feature_array(pointer_feats)
@@ -45,9 +50,6 @@ class Document(object):
             self.pointer_feats_array = []
         self.pointer_candidates: Optional[List[Tuple[int, int]]] = pointer_candidates
         self.feature_extractor = feature_extractor
-        self.text_blocks: List[TextBlock] = text_blocks
-        # Key to use for CV partitioning
-        self.cv_key: str = cv_key
 
     @property
     def n_blocks(self):
@@ -55,6 +57,7 @@ class Document(object):
 
     @property
     def n_features(self):
+        assert self.feats is not None and 'self.feats accessed before set'
         return sum(map(len, self.feats.values()))
 
     @property

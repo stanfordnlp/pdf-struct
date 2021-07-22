@@ -4,8 +4,8 @@ import numpy as np
 from sklearn.metrics import confusion_matrix, accuracy_score, f1_score, \
     recall_score, precision_score
 
-from pdf_struct.transition_predictor import ListAction
-from pdf_struct.document import Document
+from pdf_struct.core.predictor import ListAction
+from pdf_struct.core.document import Document
 
 
 def create_hierarchy_matrix(document: Document) -> np.array:

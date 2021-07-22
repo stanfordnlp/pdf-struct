@@ -4,11 +4,11 @@ import os
 
 import click
 
-from pdf_struct import transition_labels
-from pdf_struct.pdf import load_pdfs_from_directory
-from pdf_struct.structure_evaluation import evaluate_labels
-from pdf_struct.transition_predictor import ListAction
-from pdf_struct.utils import pairwise
+from pdf_struct.core import transition_labels
+from pdf_struct.loader.pdf import load_from_directory
+from pdf_struct.core.structure_evaluation import evaluate_labels
+from pdf_struct.core.predictor import ListAction
+from pdf_struct.core.utils import pairwise
 
 
 @click.command()
@@ -18,7 +18,7 @@ def main():
     annos = transition_labels.load_annos(anno_dir)
 
     print('Loading and extracting features from raw files')
-    documents = load_pdfs_from_directory(os.path.join('data', 'raw'), annos, dummy_feats=True)
+    documents = load_from_directory(os.path.join('data', 'raw'), annos)
     documents_pred = []
     for document in documents:
         d = copy.deepcopy(document)

@@ -4,13 +4,16 @@ from collections import Counter
 
 import click
 import numpy as np
+import tqdm
 from sklearn.metrics import accuracy_score
 
-from pdf_struct import transition_labels, transition_predictor
-from pdf_struct.pdf import load_pdfs_from_directory
-from pdf_struct.structure_evaluation import evaluate_structure, evaluate_labels
-from pdf_struct.text import load_texts_from_directory
-from pdf_struct.hocr import load_hocr, export_result
+from pdf_struct import loader
+from pdf_struct.core import predictor, transition_labels
+from pdf_struct.core.structure_evaluation import evaluate_structure, \
+    evaluate_labels
+from pdf_struct.feature_extractor.pdf_contract import PDFFeatureExtractor
+from pdf_struct.feature_extractor.text_contract import PlainTextFeatureExtractor
+from pdf_struct.export.hocr import export_result
 
 
 @click.command()
@@ -26,18 +29,22 @@ def main(k_folds: int, file_type: str):
 
     print('Loading and extracting features from raw files')
     if file_type == 'hocr':
-        documents = load_hocr(os.path.join('data', 'raw'), annos)
+        documents = loader.hocr.load_from_directory(os.path.join('data', 'raw'), annos)
     elif file_type == 'pdf':
-        documents = load_pdfs_from_directory(os.path.join('data', 'raw'), annos)
+        documents = loader.pdf.load_from_directory(os.path.join('data', 'raw'), annos)
+        documents = [PDFFeatureExtractor.append_features_to_document(document)
+                     for document in tqdm.tqdm(documents)]
     else:
-        documents = load_texts_from_directory(os.path.join('data', 'raw'), annos)
+        documents = loader.text.load_from_directory(os.path.join('data', 'raw'), annos)
+        documents = [PlainTextFeatureExtractor.append_features_to_document(document)
+                     for document in tqdm.tqdm(documents)]
 
     print(f'Extracted {sum(map(lambda d: d.n_blocks, documents))} lines from '
           f'{len(documents)} documents with label distribution: '
           f'{Counter(sum(map(lambda d: d.labels, documents), []))} for evaluation.')
     print(f'Extracted {documents[0].n_features}-dim features and '
           f'{documents[0].n_pointer_features}-dim pointer features.')
-    documents_pred = transition_predictor.k_fold_train_predict(
+    documents_pred = predictor.k_fold_train_predict(
         documents, n_splits=k_folds)
 
     with open(os.path.join('data', f'results_{file_type}.jsonl'), 'w') as fout:

@@ -1,1 +1,0 @@
-from pdf_struct.pdf.loader import load_pdfs_from_directory, parse_pdf

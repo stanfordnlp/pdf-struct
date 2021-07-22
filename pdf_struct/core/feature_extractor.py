@@ -1,9 +1,9 @@
 from collections import OrderedDict, defaultdict
 from inspect import signature
-from typing import Optional, List, Tuple, Dict, Any
+from typing import Optional, List, Tuple, Dict, Any, Type
 
-from pdf_struct.document import TextBlock
-from pdf_struct.transition_labels import ListAction
+from pdf_struct.core.document import TextBlock, Document
+from pdf_struct.core.transition_labels import ListAction
 
 
 class _FeatureRegisterer(type):
@@ -292,18 +292,17 @@ class BaseFeatureExtractor(object, metaclass=_FeatureRegisterer):
         return features, pairs
 
     @classmethod
-    def initialize_and_extract_all_features(cls, text_blocks, labels, pointers, dummy_feats, *args, **kwargs):
-        assert labels is not None
-        if dummy_feats:
-            feature_extractor = None
-            feats = None
-            feats_test = None
-            pointer_feats = None
-            pointer_candidates = None
+    def append_features_to_document(cls, document: Document) -> Document:
+        feature_extractor = cls(document.text_blocks)
+        feats_test = feature_extractor.extract_features_all(document.text_blocks, None)
+        if document.labels is None:
+            # prediction
+            feats, pointer_feats, pointer_candidates = None, None, None
         else:
-            feature_extractor = cls(*args, **kwargs)
-            feats = feature_extractor.extract_features_all(text_blocks, labels)
-            feats_test = feature_extractor.extract_features_all(text_blocks, None)
+            feats = feature_extractor.extract_features_all(document.text_blocks, document.labels)
             pointer_feats, pointer_candidates = feature_extractor.extract_pointer_features_all(
-                text_blocks, labels, pointers)
-        return feature_extractor, feats, feats_test, pointer_feats, pointer_candidates
+                document.text_blocks, document.labels, document.pointers)
+        document.set_features(
+            feats, feats_test, pointer_feats, pointer_candidates, feature_extractor
+        )
+        return document

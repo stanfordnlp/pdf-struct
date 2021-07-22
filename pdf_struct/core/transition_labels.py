@@ -6,7 +6,7 @@ from collections import defaultdict
 
 import tqdm
 
-from pdf_struct.utils import get_filename
+from pdf_struct.core.utils import get_filename
 
 
 class ListAction(Enum):

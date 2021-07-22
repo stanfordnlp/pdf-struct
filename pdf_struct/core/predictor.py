@@ -7,8 +7,8 @@ import numpy as np
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import KFold
 
-from pdf_struct.transition_labels import ListAction
-from pdf_struct.document import Document
+from pdf_struct.core.transition_labels import ListAction
+from pdf_struct.core.document import Document
 
 
 def train_classifiers(documents: List[Document], used_features: Optional[List[int]]=None):

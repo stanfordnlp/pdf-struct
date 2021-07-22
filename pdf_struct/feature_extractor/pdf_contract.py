@@ -5,14 +5,14 @@ import editdistance
 import numpy as np
 import regex as re
 
-from pdf_struct import features
-from pdf_struct.clustering import cluster_positions, get_margins
-from pdf_struct.feature_extractor import BaseFeatureExtractor, pointer_feature, \
-    feature, single_input_feature, pairwise_feature
-from pdf_struct.listing import MultiLevelNumberedList, SectionNumber, \
+from pdf_struct.core.clustering import cluster_positions, get_margins
+from pdf_struct.core.feature_extractor import BaseFeatureExtractor, \
+    pointer_feature, feature, single_input_feature, pairwise_feature
+from pdf_struct.core.utils import pairwise
+from pdf_struct.features import lexical
+from pdf_struct.features.listing import MultiLevelNumberedList, SectionNumber, \
     NumberedListState
-from pdf_struct.lm import compare_losses
-from pdf_struct.utils import pairwise
+from pdf_struct.features.lm import compare_losses
 
 
 def get_pdf_margin(clusters, n_pages):
@@ -184,37 +184,37 @@ class PDFFeatureExtractor(BaseFeatureExtractor):
             'loss_diff_prev': loss_diff_prev
         }
 
-    @pairwise_feature([(1, 2)])
-    def whereas(self, tb1, tb2):
-        return features.whereas(_gt(tb1), _gt(tb2))
+    @single_input_feature([2])
+    def whereas(self, tb):
+        return lexical.whereas(_gt(tb))
 
-    @pairwise_feature([(1, 2)])
-    def therefore(self, tb1, tb2):
-        return features.therefore(_gt(tb1), _gt(tb2))
+    @single_input_feature([2])
+    def therefore(self, tb):
+        return lexical.therefore(_gt(tb))
 
-    @pairwise_feature([(0, 1), (1, 2)])
-    def colon_ish(self, tb1, tb2):
-        return features.colon_ish(_gt(tb1), _gt(tb2))
+    @single_input_feature([0, 1])
+    def colon_ish(self, tb):
+        return lexical.colon_ish(_gt(tb))
 
-    @pairwise_feature([(0, 1), (1, 2)])
-    def punctuated(self, tb1, tb2):
-        return features.punctuated(_gt(tb1), _gt(tb2))
+    @single_input_feature([0, 1])
+    def punctuated(self, tb):
+        return lexical.punctuated(_gt(tb))
 
-    @pairwise_feature([(1, 2)])
-    def list_ish(self, tb1, tb2):
-        return features.list_ish(_gt(tb1), _gt(tb2))
+    @single_input_feature([1])
+    def list_ish(self, tb):
+        return lexical.list_ish(_gt(tb))
 
     @pairwise_feature([(0, 1), (1, 2)])
     def mask_continuation(self, tb1, tb2):
-        return features.mask_continuation(_gt(tb1), _gt(tb2))
+        return lexical.mask_continuation(_gt(tb1), _gt(tb2))
 
     @single_input_feature([1, 2])
     def all_capital(self, tb):
-        return features.all_capital(_gt(tb))
+        return lexical.all_capital(_gt(tb))
 
     @single_input_feature([1, 2])
     def space_separated(self, tb):
-        return features.space_separated(_gt(tb))
+        return lexical.space_separated(_gt(tb))
 
     @pointer_feature()
     def pointer_section_number(self, head_tb, tb1, tb2, tb3):
