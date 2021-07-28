@@ -11,17 +11,23 @@ from pdf_struct.core.document import Document
 from pdf_struct.core.structure_evaluation import evaluate_structure, \
     evaluate_labels
 from pdf_struct.core.transition_labels import ListAction
-from pdf_struct.features.listing import SectionNumber
+from pdf_struct.features.listing import SectionNumber, SectionNumberJa
 
 
-def predict_transitions_numbering(document: Document) -> Document:
-    numbered_list: List[SectionNumber] = []
+section_number_cls_dict = {
+    'SectionNumber': SectionNumber,
+    'SectionNumberJa': SectionNumberJa
+}
+
+
+def predict_transitions_numbering(section_number_cls, document: Document) -> Document:
+    numbered_list = []
     anchors: List[int] = []
 
     labels = []
     pointers = []
     for i in range(document.n_blocks):
-        candidates = SectionNumber.extract_section_number(document.texts[i])
+        candidates = section_number_cls.extract_section_number(document.texts[i])
         if len(candidates) == 0:
             labels.append(ListAction.CONTINUOUS)
             pointers.append(None)
@@ -74,9 +80,10 @@ def predict_transitions_numbering(document: Document) -> Document:
 
 @click.command()
 @click.argument('file-type', type=click.Choice(('txt', 'pdf')))
+@click.argument('section-number', type=click.Choice(tuple(section_number_cls_dict.keys())))
 @click.argument('raw-dir', type=click.Path(exists=True))
 @click.argument('anno-dir', type=click.Path(exists=True))
-def main(file_type: str, raw_dir: str, anno_dir: str):
+def main(file_type: str, section_number: str, raw_dir: str, anno_dir: str):
     print(f'Loading annotations from {anno_dir}')
     annos = transition_labels.load_annos(anno_dir)
 
@@ -86,7 +93,8 @@ def main(file_type: str, raw_dir: str, anno_dir: str):
     else:
         documents = loader.text.load_from_directory(raw_dir, annos)
 
-    documents_pred = [predict_transitions_numbering(document)
+    section_number_cls = section_number_cls_dict[section_number]
+    documents_pred = [predict_transitions_numbering(section_number_cls, document)
                       for document in documents]
 
     print(json.dumps(evaluate_structure(documents, documents_pred), indent=2))
