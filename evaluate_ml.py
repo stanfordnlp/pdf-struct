@@ -57,7 +57,7 @@ def main(k_folds: int, file_type: str, feature: str, raw_dir, anno_dir, out_path
     documents_pred = predictor.k_fold_train_predict(
         documents, n_splits=k_folds)
 
-    with open(os.path.join('data', out_path), 'w') as fout:
+    with open(out_path, 'w') as fout:
         for d, d_p in zip(documents, documents_pred):
             assert d.path == d_p.path
             transition_prediction_accuracy = accuracy_score(
