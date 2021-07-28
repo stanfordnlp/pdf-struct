@@ -103,6 +103,9 @@ class BaseSectionNumber(object, metaclass=_SectionPatternRegisterer):
                     return True
         return False
 
+    def __repr__(self):
+        return f'{str(type(self))[:-1]} type={self.section_number_type}, number={self.number}>'
+
 
 class NumberedListState(Enum):
     NO_NUM = 0

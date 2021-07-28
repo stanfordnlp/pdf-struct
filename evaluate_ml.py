@@ -11,7 +11,7 @@ from pdf_struct import loader
 from pdf_struct.core import predictor, transition_labels
 from pdf_struct.core.structure_evaluation import evaluate_structure, \
     evaluate_labels
-from pdf_struct.feature_extractor.pdf_contract import PDFFeatureExtractor
+from pdf_struct.feature_extractor.pdf_contract import PDFContractEnFeatureExtractor
 from pdf_struct.feature_extractor.text_contract import PlainTextFeatureExtractor
 
 
@@ -33,7 +33,7 @@ def main(k_folds: int, file_type: str, raw_dir, anno_dir, out_path):
         documents = loader.hocr.load_from_directory(raw_dir, annos)
     elif file_type == 'pdf':
         documents = loader.pdf.load_from_directory(raw_dir, annos)
-        documents = [PDFFeatureExtractor.append_features_to_document(document)
+        documents = [PDFContractEnFeatureExtractor.append_features_to_document(document)
                      for document in tqdm.tqdm(documents)]
     else:
         documents = loader.text.load_from_directory(raw_dir, annos)

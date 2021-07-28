@@ -26,7 +26,7 @@ def _gt(tb) -> Optional[str]:
     return None if tb is None else tb.text
 
 
-class PDFFeatureExtractor(BaseFeatureExtractor):
+class BasePDFFeatureExtractor(BaseFeatureExtractor):
     def __init__(self, text_boxes):
         self.text_boxes = text_boxes
         # bbox is [x_left, y_bottom, x_right, y_top] in points with
@@ -131,6 +131,40 @@ class PDFFeatureExtractor(BaseFeatureExtractor):
         ls = tb1.bbox[1] - tb2.bbox[1]
         return ls not in self.line_spacing
 
+    @pairwise_feature([(0, 1), (1, 2)])
+    def page_change(self, tb1, tb2):
+        if tb1 is None or tb2 is None:
+            return True
+        return tb1.page != tb2.page
+
+    @pointer_feature()
+    def pointer_indent(self, head_tb, tb1, tb2, tb3):
+        feats = {
+            '1_2': self._indent(tb1, tb2),
+            'head_2': self._indent(head_tb, tb2)
+        }
+        if tb3 is None:
+            feats.update({
+                '1_3': -1,
+                'head_3': -1
+            })
+        else:
+            feats.update({
+                '1_3': self._indent(tb1, tb3),
+                'head_3': self._indent(head_tb, tb3)
+            })
+        return feats
+
+    @pointer_feature()
+    def pointer_left_aligned(self, head_tb, tb1, tb2, tb3):
+        return {
+            '1': self.left_aligned(tb1),
+            '3': True if tb3 is None else self.left_aligned(tb3),
+            'head': self.left_aligned(head_tb)
+        }
+
+
+class PDFContractEnFeatureExtractor(BasePDFFeatureExtractor):
     @single_input_feature([1, 2])
     def dict_like(self, tb):
         if tb is None:
@@ -151,12 +185,6 @@ class PDFFeatureExtractor(BaseFeatureExtractor):
         return ((tb.bbox[1] < 100 or tb.bbox[3] > 700) and
                 re.search('page [1-9]', tb.text, flags=re.IGNORECASE) is not None and
                 len(tb.text.replace(' ', '')) < 10)
-
-    @pairwise_feature([(0, 1), (1, 2)])
-    def page_change(self, tb1, tb2):
-        if tb1 is None or tb2 is None:
-            return True
-        return tb1.page != tb2.page
 
     @feature()
     def numbered_list_state(self, tb1, tb2, tb3, tb4, states):
@@ -232,29 +260,3 @@ class PDFFeatureExtractor(BaseFeatureExtractor):
                 '3_next_of_head': SectionNumber.is_any_next_of(
                     section_numbers3, section_number_head)
             }
-
-    @pointer_feature()
-    def pointer_indent(self, head_tb, tb1, tb2, tb3):
-        feats = {
-            '1_2': self._indent(tb1, tb2),
-            'head_2': self._indent(head_tb, tb2)
-        }
-        if tb3 is None:
-            feats.update({
-                '1_3': -1,
-                'head_3': -1
-            })
-        else:
-            feats.update({
-                '1_3': self._indent(tb1, tb3),
-                'head_3': self._indent(head_tb, tb3)
-            })
-        return feats
-
-    @pointer_feature()
-    def pointer_left_aligned(self, head_tb, tb1, tb2, tb3):
-        return {
-            '1': self.left_aligned(tb1),
-            '3': True if tb3 is None else self.left_aligned(tb3),
-            'head': self.left_aligned(head_tb)
-        }
