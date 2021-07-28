@@ -22,14 +22,42 @@ feature_extractor_dict = {
 }
 
 
+def dump_predictions(out_path, documents, documents_pred):
+    with open(out_path, 'w') as fout:
+        for d, d_p in zip(documents, documents_pred):
+            assert d.path == d_p.path
+            transition_prediction_accuracy = accuracy_score(
+                np.array([l.value for l in d.labels]),
+                np.array([l.value for l in d_p.labels])
+            )
+            fout.write(json.dumps({
+                'path': d.path,
+                'texts': d.texts,
+                'features': d.feature_array,
+                'transition_prediction_accuracy': transition_prediction_accuracy,
+                'ground_truth': {
+                    'labels': [l.name for l in d.labels],
+                    'pointers': d.pointers
+                },
+                'prediction': {
+                    'labels': [l.name for l in d_p.labels],
+                    'pointers': d_p.pointers
+                }
+            }))
+            fout.write('\n')
+
+
 @click.command()
 @click.option('-k', '--k-folds', type=int, default=5)
+@click.option('--prediction', type=click.Path(exists=False), default=None,
+              help='Dump prediction as a JSONL file.')
+@click.option('--metrics', type=click.Path(exists=False), default=None,
+              help='Dump metrics as a JSON file.')
 @click.argument('file-type', type=click.Choice(('hocr', 'txt', 'pdf')))
 @click.argument('feature', type=click.Choice(tuple(feature_extractor_dict.keys())))
 @click.argument('raw-dir', type=click.Path(exists=True))
 @click.argument('anno-dir', type=click.Path(exists=True))
-@click.argument('out-path', type=click.Path(exists=False))
-def main(k_folds: int, file_type: str, feature: str, raw_dir, anno_dir, out_path):
+def main(k_folds: int, prediction, metrics, file_type: str, feature: str, raw_dir, anno_dir):
     print(f'Loading annotations from {anno_dir}')
     if file_type == 'hocr':
         annos = transition_labels.load_hocr_annos(anno_dir)
@@ -57,30 +85,19 @@ def main(k_folds: int, file_type: str, feature: str, raw_dir, anno_dir, out_path
     documents_pred = predictor.k_fold_train_predict(
         documents, n_splits=k_folds)
 
-    with open(out_path, 'w') as fout:
-        for d, d_p in zip(documents, documents_pred):
-            assert d.path == d_p.path
-            transition_prediction_accuracy = accuracy_score(
-                np.array([l.value for l in d.labels]),
-                np.array([l.value for l in d_p.labels])
-            )
-            fout.write(json.dumps({
-                'path': d.path,
-                'texts': d.texts,
-                'features': d.feature_array,
-                'transition_prediction_accuracy': transition_prediction_accuracy,
-                'ground_truth': {
-                    'labels': [l.name for l in d.labels],
-                    'pointers': d.pointers
-                },
-                'prediction': {
-                    'labels': [l.name for l in d_p.labels],
-                    'pointers': d_p.pointers
-                }
-            }))
-            fout.write('\n')
-    print(json.dumps(evaluate_structure(documents, documents_pred), indent=2))
-    print(json.dumps(evaluate_labels(documents, documents_pred), indent=2))
+    if prediction is not None:
+        dump_predictions(prediction, documents, documents_pred)
+
+    if metrics is None:
+        print(json.dumps(evaluate_structure(documents, documents_pred), indent=2))
+        print(json.dumps(evaluate_labels(documents, documents_pred), indent=2))
+    else:
+        _metrics = {
+            'structure': evaluate_structure(documents, documents_pred),
+            'labels': evaluate_labels(documents, documents_pred)
+        }
+        with open(metrics, 'w') as fout:
+            json.dump(_metrics, fout, indent=2)
 
 
 if __name__ == '__main__':

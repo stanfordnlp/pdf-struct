@@ -14,10 +14,12 @@ from pdf_struct import loader
 
 
 @click.command()
+@click.option('--metrics', type=click.Path(exists=False), default=None,
+              help='Dump metrics as a JSON file.')
 @click.argument('file-type', type=click.Choice(('txt', 'pdf')))
 @click.argument('raw-dir', type=click.Path(exists=True))
 @click.argument('anno-dir', type=click.Path(exists=True))
-def main(file_type: str, raw_dir: str, anno_dir: str):
+def main(metrics, file_type: str, raw_dir: str, anno_dir: str):
     print(f'Loading annotations from {anno_dir}')
     annos = transition_labels.load_annos(anno_dir)
 
@@ -110,8 +112,16 @@ def main(file_type: str, raw_dir: str, anno_dir: str):
             d.pointers = pointers
             documents_pred.append(d)
 
-    print(json.dumps(evaluate_structure(documents, documents_pred), indent=2))
-    print(json.dumps(evaluate_labels(documents, documents_pred), indent=2))
+    if metrics is None:
+        print(json.dumps(evaluate_structure(documents, documents_pred), indent=2))
+        print(json.dumps(evaluate_labels(documents, documents_pred), indent=2))
+    else:
+        _metrics = {
+            'structure': evaluate_structure(documents, documents_pred),
+            'labels': evaluate_labels(documents, documents_pred)
+        }
+        with open(metrics, 'w') as fout:
+            json.dump(_metrics, fout, indent=2)
 
 
 if __name__ == '__main__':
