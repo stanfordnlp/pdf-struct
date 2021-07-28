@@ -17,7 +17,7 @@ def _gt(tb) -> Optional[str]:
     return None if tb is None else tb.text
 
 
-class PlainTextFeatureExtractor(BaseFeatureExtractor):
+class TextContractFeatureExtractor(BaseFeatureExtractor):
     def __init__(self, text_lines):
         self.right_margin = get_margins(
             cluster_positions([l.width for l in text_lines], 8)[0][::-1], 5)

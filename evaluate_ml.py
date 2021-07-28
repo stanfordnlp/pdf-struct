@@ -11,34 +11,43 @@ from pdf_struct import loader
 from pdf_struct.core import predictor, transition_labels
 from pdf_struct.core.structure_evaluation import evaluate_structure, \
     evaluate_labels
-from pdf_struct.feature_extractor.pdf_contract import PDFContractEnFeatureExtractor
-from pdf_struct.feature_extractor.text_contract import PlainTextFeatureExtractor
+from pdf_struct import feature_extractor
+
+
+feature_extractor_dict = {
+    'HOCRFeatureExtractor': feature_extractor.HOCRFeatureExtractor,
+    'PDFContractEnFeatureExtractor': feature_extractor.PDFContractEnFeatureExtractor,
+    'PDFContractJaFeatureExtractor': feature_extractor.PDFContractJaFeatureExtractor,
+    'TextContractFeatureExtractor': feature_extractor.TextContractFeatureExtractor
+}
 
 
 @click.command()
 @click.option('-k', '--k-folds', type=int, default=5)
 @click.argument('file-type', type=click.Choice(('hocr', 'txt', 'pdf')))
+@click.argument('feature', type=click.Choice(tuple(feature_extractor_dict.keys())))
 @click.argument('raw-dir', type=click.Path(exists=True))
 @click.argument('anno-dir', type=click.Path(exists=True))
 @click.argument('out-path', type=click.Path(exists=False))
-def main(k_folds: int, file_type: str, raw_dir, anno_dir, out_path):
+def main(k_folds: int, file_type: str, feature: str, raw_dir, anno_dir, out_path):
     print(f'Loading annotations from {anno_dir}')
     if file_type == 'hocr':
         annos = transition_labels.load_hocr_annos(anno_dir)
     else:
         annos = transition_labels.load_annos(anno_dir)
 
-    print('Loading and extracting features from raw files')
+    print('Loading raw files')
     if file_type == 'hocr':
         documents = loader.hocr.load_from_directory(raw_dir, annos)
     elif file_type == 'pdf':
         documents = loader.pdf.load_from_directory(raw_dir, annos)
-        documents = [PDFContractEnFeatureExtractor.append_features_to_document(document)
-                     for document in tqdm.tqdm(documents)]
     else:
         documents = loader.text.load_from_directory(raw_dir, annos)
-        documents = [PlainTextFeatureExtractor.append_features_to_document(document)
-                     for document in tqdm.tqdm(documents)]
+
+    print('Extracting features from documents')
+    feature_extractor_cls = feature_extractor_dict[feature]
+    documents = [feature_extractor_cls.append_features_to_document(document)
+                 for document in tqdm.tqdm(documents)]
 
     print(f'Extracted {sum(map(lambda d: d.n_blocks, documents))} lines from '
           f'{len(documents)} documents with label distribution: '
