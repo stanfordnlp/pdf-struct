@@ -1,15 +1,38 @@
 from collections import OrderedDict, defaultdict
 from inspect import signature
+from itertools import chain
+
 from typing import Optional, List, Tuple, Dict, Any, Type
 
 from pdf_struct.core.document import TextBlock, Document
 from pdf_struct.core.transition_labels import ListAction
 
 
+def _obtain_inherited_features(cls):
+    features = OrderedDict()
+    pointer_features = OrderedDict()
+
+    for base_cls in cls.__bases__:
+        features = OrderedDict(chain(
+            features.items(),
+            _obtain_inherited_features(base_cls)[0].items(),
+        ))
+        pointer_features = OrderedDict(chain(
+            pointer_features.items(),
+            _obtain_inherited_features(base_cls)[1].items(),
+        ))
+
+    if hasattr(cls, '_features'):
+        features = OrderedDict(chain(features.items(), cls._features.items()))
+        pointer_features = OrderedDict(chain(
+            pointer_features.items(), cls._pointer_features.items()))
+    return features, pointer_features
+
+
+
 class _FeatureRegisterer(type):
     def __init__(cls, name, bases, attrs):
-        cls._features = OrderedDict()
-        cls._pointer_features = OrderedDict()
+        cls._features, cls._pointer_features = _obtain_inherited_features(cls)
         for key, val in attrs.items():
             properties = getattr(val, '_prop', None)
             if properties is not None:
