@@ -13,25 +13,6 @@ if torch.cuda.is_available():
 tokenizer = transformers.GPT2Tokenizer.from_pretrained("gpt2")
 
 
-def compare_losses(sentence1: str, sentence2: str):
-    # crop to smaller sequence because longer sequence -> easier to predict
-    tokenized_input1 = tokenizer.tokenize(sentence1)
-    tokenized_input2 = tokenizer.tokenize(sentence2)
-    length = min(len(tokenized_input1), len(tokenized_input2))
-    tokenized_input1 = tokenized_input1[:length]
-    tokenized_input2 = tokenized_input2[:length]
-    tensor_input1 = torch.tensor(
-        [tokenizer.convert_tokens_to_ids(tokenized_input1)])[:model.config.n_positions]
-    tensor_input2 = torch.tensor(
-        [tokenizer.convert_tokens_to_ids(tokenized_input2)])[:model.config.n_positions]
-    if torch.cuda.is_available():
-        tensor_input1 = tensor_input1.to(torch.device('cuda:0'))
-        tensor_input2 = tensor_input2.to(torch.device('cuda:0'))
-    loss1 = model(tensor_input1, labels=tensor_input1)[0]
-    loss2 = model(tensor_input2, labels=tensor_input2)[0]
-    return loss1.item(), loss2.item()
-
-
 def _get_masked_loss(token_ids: List[int], next: Optional[List[int]]=None,
                      prev: Optional[List[int]]=None):
     if prev is None == next is None:

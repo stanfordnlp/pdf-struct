@@ -4,10 +4,11 @@ import numpy as np
 from sklearn.metrics import confusion_matrix, accuracy_score, f1_score, \
     recall_score, precision_score
 
-from pdf_struct.transition_predictor import DocumentWithFeatures, ListAction
+from pdf_struct.core.predictor import ListAction
+from pdf_struct.core.document import Document
 
 
-def create_hierarchy_matrix(document: DocumentWithFeatures) -> np.array:
+def create_hierarchy_matrix(document: Document) -> np.array:
     # (i, j) shows the relationship (-1: no relationship, 0: same paragraph,
     # 1: same level, 2: line j is below line i)
     # Note that it will return upper triangle matrix --- (i, j) (i < j) will
@@ -98,7 +99,7 @@ def _calc_metrics(ys_true: List[List[int]], ys_pred: List[List[int]],
 
 
 
-def evaluate_structure(documents_true: List[DocumentWithFeatures], documents_pred: List[DocumentWithFeatures]):
+def evaluate_structure(documents_true: List[Document], documents_pred: List[Document]):
     # Since hierarchy matrix is a upper triangle matrix, feeding full matrix
     # with create_hierarchy_matrix(d).flatten() will give higher accuracy than it should do
     ms_true = [
@@ -138,7 +139,7 @@ def print_confusion_matrix(y_true, y_pred):
           'true label being i-th class and predicted label being j-th class.)')
 
 
-def evaluate_labels(documents_true: List[DocumentWithFeatures], documents_pred: List[DocumentWithFeatures], confusion_matrix=True):
+def evaluate_labels(documents_true: List[Document], documents_pred: List[Document], confusion_matrix=True):
     ys_pred = [np.array([l.value for l in d.labels]) for d in documents_pred]
     ys_true = [np.array([l.value for l in d.labels]) for d in documents_true]
     if confusion_matrix:

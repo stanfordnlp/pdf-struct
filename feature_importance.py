@@ -4,15 +4,13 @@ import os
 import click
 from joblib import Parallel, delayed
 
-
-from pdf_struct import transition_labels, transition_predictor
-from pdf_struct.pdf import load_pdfs
-from pdf_struct.structure_evaluation import evaluate_structure, evaluate_labels
-from pdf_struct.text import load_texts
+from pdf_struct.core import predictor, transition_labels
+from pdf_struct.core.structure_evaluation import evaluate_structure, evaluate_labels
+from pdf_struct import loader
 
 
 def single_run(documents, feature_indices, i):
-    documents_pred = transition_predictor.k_fold_train_predict(
+    documents_pred = predictor.k_fold_train_predict(
         documents, used_features=feature_indices)
     structure_metrics = evaluate_structure(documents, documents_pred)
     label_metrics = evaluate_labels(documents, documents_pred,
@@ -37,17 +35,16 @@ def main(file_type: str, search_method: str, n_rounds: int, n_jobs: int):
 
     print('Loading and extracting features from raw files')
     if file_type == 'pdf':
-        documents = load_pdfs(os.path.join('data', 'raw'), annos)
+        documents = loader.pdf.load_from_directory(os.path.join('data', 'raw'), annos)
     else:
-        documents = load_texts(os.path.join('data', 'raw'), annos)
+        documents = loader.text.load_from_directory(os.path.join('data', 'raw'), annos)
 
-    n_features = len(documents[0].feats[0])
     if n_rounds <= 0:
         if search_method[:4] == 'incr':
-            n_rounds = n_features
+            n_rounds = documents[0].n_features
         else:
-            n_rounds = n_features - 1
-    all_feature_indices = set(range(n_features))
+            n_rounds = documents[0].n_features - 1
+    all_feature_indices = set(range(documents[0].n_features))
     results = []
     cur_feature_indices = set()
     for round in range(n_rounds):

@@ -5,8 +5,8 @@ from typing import List
 
 import numpy as np
 
-from pdf_struct.hocr.transition_predictor import HOCRDocumentWithFeatures
-from pdf_struct.structure_evaluation import create_hierarchy_matrix
+from pdf_struct.core.structure_evaluation import create_hierarchy_matrix
+from pdf_struct.core.document import Document
 
 
 def get_birelationship(hierarchy_matrix, target: int, relation: int) -> List[int]:
@@ -15,11 +15,11 @@ def get_birelationship(hierarchy_matrix, target: int, relation: int) -> List[int
                   set(np.where(hierarchy_matrix[:, target] == relation)[0]))
 
 
-def to_ids(cell: HOCRDocumentWithFeatures, indices: List[int]) -> List[str]:
+def to_ids(cell: Document, indices: List[int]) -> List[str]:
     return [b for i in indices for b in cell.text_blocks[i].blocks]
 
 
-def export_result(cells: List[HOCRDocumentWithFeatures], out_dir: str):
+def export_result(cells: List[Document], out_dir: str):
     try:
         os.makedirs(out_dir)
     except OSError:
