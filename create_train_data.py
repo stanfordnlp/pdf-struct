@@ -40,18 +40,19 @@ def process_text(in_path, out_path):
 
 @click.command()
 @click.argument('file-type', type=click.Choice(('hocr', 'txt', 'pdf')))
-def main(file_type):
-    paths = glob.glob(os.path.join('data', 'raw', f'*.{file_type}'))
-    out_dir = os.path.join('data', f'anno_{file_type}')
-    os.makedirs(out_dir)
+@click.argument('indir', type=click.Path(exists=True))
+@click.argument('outdir', type=click.Path(exists=False))
+def main(file_type, indir, outdir):
+    paths = glob.glob(os.path.join(indir, f'*.{file_type}'))
+    os.makedirs(outdir)
     for path in tqdm.tqdm(paths):
         out_filename = os.path.splitext(os.path.basename(path))[0] + '.tsv'
         if file_type == 'hocr':
-            process_hocr(path, os.path.join(out_dir, out_filename))
+            process_hocr(path, os.path.join(outdir, out_filename))
         elif file_type == 'pdf':
-            process_pdf(path, os.path.join(out_dir, out_filename))
+            process_pdf(path, os.path.join(outdir, out_filename))
         elif file_type == 'txt':
-            process_text(path, os.path.join(out_dir, out_filename))
+            process_text(path, os.path.join(outdir, out_filename))
         else:
             assert not 'Should not get here'
 

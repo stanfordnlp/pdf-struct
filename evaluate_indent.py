@@ -15,14 +15,15 @@ from pdf_struct import loader
 
 @click.command()
 @click.argument('file-type', type=click.Choice(('txt', 'pdf')))
-def main(file_type: str):
-    anno_dir = os.path.join('data', f'anno_{file_type}')
+@click.argument('raw-dir', type=click.Path(exists=True))
+@click.argument('anno-dir', type=click.Path(exists=True))
+def main(file_type: str, raw_dir: str, anno_dir: str):
     print(f'Loading annotations from {anno_dir}')
     annos = transition_labels.load_annos(anno_dir)
 
     print('Loading and extracting features from raw files')
     if file_type == 'pdf':
-        documents = loader.pdf.load_from_directory(os.path.join('data', 'raw'), annos)
+        documents = loader.pdf.load_from_directory(raw_dir, annos)
         documents_pred = []
         for document in documents:
             horizontal_thresh = 10  # 10 points = 1em
@@ -74,7 +75,7 @@ def main(file_type: str):
             documents_pred.append(d)
 
     else:
-        documents = loader.text.load_from_directory(os.path.join('data', 'raw'), annos)
+        documents = loader.text.load_from_directory(raw_dir, annos)
         documents_pred = []
         for document in documents:
             labels = []

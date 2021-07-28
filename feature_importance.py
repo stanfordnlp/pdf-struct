@@ -24,20 +24,25 @@ def single_run(documents, feature_indices, i):
 
 
 @click.command()
-@click.argument('file-type', type=click.Choice(('txt', 'pdf')))
-@click.argument('search-method', type=click.Choice(('incr-important', 'decr-important', 'decr-unimportant')))
-@click.argument('n-rounds', type=int)
+@click.option('--search-method',
+              type=click.Choice(('incr-important', 'decr-important', 'decr-unimportant')),
+              default='incr-important')
+@click.option('--n-rounds', type=int, default=0)
 @click.option('--n-jobs', type=int, default=1)
-def main(file_type: str, search_method: str, n_rounds: int, n_jobs: int):
-    anno_dir = os.path.join('data', f'anno_{file_type}')
+@click.argument('file-type', type=click.Choice(('txt', 'pdf')))
+@click.argument('raw-dir', type=click.Path(exists=True))
+@click.argument('anno-dir', type=click.Path(exists=True))
+@click.argument('out-path', type=click.Path(exists=False))
+def main(search_method: str, n_rounds: int, n_jobs: int, file_type: str,
+         raw_dir: str, anno_dir: str, out_path: str):
     print(f'Loading annotations from {anno_dir}')
     annos = transition_labels.load_annos(anno_dir)
 
     print('Loading and extracting features from raw files')
     if file_type == 'pdf':
-        documents = loader.pdf.load_from_directory(os.path.join('data', 'raw'), annos)
+        documents = loader.pdf.load_from_directory(raw_dir, annos)
     else:
-        documents = loader.text.load_from_directory(os.path.join('data', 'raw'), annos)
+        documents = loader.text.load_from_directory(raw_dir, annos)
 
     if n_rounds <= 0:
         if search_method[:4] == 'incr':
@@ -75,7 +80,7 @@ def main(file_type: str, search_method: str, n_rounds: int, n_jobs: int):
             'results': results_round
         })
         # save every round in case something goes wrong
-        with open(os.path.join('data', f'results_importance_{file_type}_{search_method}.json'), 'w') as fout:
+        with open(out_path, 'w') as fout:
             json.dump(results, fout, indent=2)
 
 

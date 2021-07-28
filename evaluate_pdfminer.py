@@ -12,13 +12,14 @@ from pdf_struct.core.utils import pairwise
 
 
 @click.command()
-def main():
-    anno_dir = os.path.join('data', 'anno_pdf')
+@click.argument('raw-dir', type=click.Path(exists=True))
+@click.argument('anno-dir', type=click.Path(exists=True))
+def main(raw_dir: str, anno_dir: str):
     print(f'Loading annotations from {anno_dir}')
     annos = transition_labels.load_annos(anno_dir)
 
     print('Loading and extracting features from raw files')
-    documents = load_from_directory(os.path.join('data', 'raw'), annos)
+    documents = load_from_directory(raw_dir, annos)
     documents_pred = []
     for document in documents:
         d = copy.deepcopy(document)

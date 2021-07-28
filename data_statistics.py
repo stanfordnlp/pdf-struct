@@ -32,16 +32,17 @@ def get_measures(values: list):
 
 @click.command()
 @click.argument('file-type', type=click.Choice(('txt', 'pdf')))
-def main(file_type: str):
-    anno_dir = os.path.join('data', f'anno_{file_type}')
+@click.argument('raw-dir', type=click.Path(exists=True))
+@click.argument('anno-dir', type=click.Path(exists=True))
+def main(file_type: str, raw_dir: str, anno_dir: str):
     print(f'Loading annotations from {anno_dir}')
     annos = load_annos(anno_dir)
 
     print('Loading and extracting features from raw files')
     if file_type == 'pdf':
-        documents = loader.pdf.load_from_directory(os.path.join('data', 'raw'), annos)
+        documents = loader.pdf.load_from_directory(raw_dir, annos)
     else:
-        documents = loader.text.load_from_directory(os.path.join('data', 'raw'), annos)
+        documents = loader.text.load_from_directory(raw_dir, annos)
 
     max_depths = [get_max_depth(d) for d in documents]
     print(json.dumps({

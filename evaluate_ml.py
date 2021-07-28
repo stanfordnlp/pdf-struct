@@ -13,14 +13,15 @@ from pdf_struct.core.structure_evaluation import evaluate_structure, \
     evaluate_labels
 from pdf_struct.feature_extractor.pdf_contract import PDFFeatureExtractor
 from pdf_struct.feature_extractor.text_contract import PlainTextFeatureExtractor
-from pdf_struct.export.hocr import export_result
 
 
 @click.command()
 @click.option('-k', '--k-folds', type=int, default=5)
 @click.argument('file-type', type=click.Choice(('hocr', 'txt', 'pdf')))
-def main(k_folds: int, file_type: str):
-    anno_dir = os.path.join('data', f'anno_{file_type}')
+@click.argument('raw-dir', type=click.Path(exists=True))
+@click.argument('anno-dir', type=click.Path(exists=True))
+@click.argument('out-path', type=click.Path(exists=False))
+def main(k_folds: int, file_type: str, raw_dir, anno_dir, out_path):
     print(f'Loading annotations from {anno_dir}')
     if file_type == 'hocr':
         annos = transition_labels.load_hocr_annos(anno_dir)
@@ -29,13 +30,13 @@ def main(k_folds: int, file_type: str):
 
     print('Loading and extracting features from raw files')
     if file_type == 'hocr':
-        documents = loader.hocr.load_from_directory(os.path.join('data', 'raw'), annos)
+        documents = loader.hocr.load_from_directory(raw_dir, annos)
     elif file_type == 'pdf':
-        documents = loader.pdf.load_from_directory(os.path.join('data', 'raw'), annos)
+        documents = loader.pdf.load_from_directory(raw_dir, annos)
         documents = [PDFFeatureExtractor.append_features_to_document(document)
                      for document in tqdm.tqdm(documents)]
     else:
-        documents = loader.text.load_from_directory(os.path.join('data', 'raw'), annos)
+        documents = loader.text.load_from_directory(raw_dir, annos)
         documents = [PlainTextFeatureExtractor.append_features_to_document(document)
                      for document in tqdm.tqdm(documents)]
 
@@ -47,7 +48,7 @@ def main(k_folds: int, file_type: str):
     documents_pred = predictor.k_fold_train_predict(
         documents, n_splits=k_folds)
 
-    with open(os.path.join('data', f'results_{file_type}.jsonl'), 'w') as fout:
+    with open(os.path.join('data', out_path), 'w') as fout:
         for d, d_p in zip(documents, documents_pred):
             assert d.path == d_p.path
             transition_prediction_accuracy = accuracy_score(
@@ -71,8 +72,6 @@ def main(k_folds: int, file_type: str):
             fout.write('\n')
     print(json.dumps(evaluate_structure(documents, documents_pred), indent=2))
     print(json.dumps(evaluate_labels(documents, documents_pred), indent=2))
-    if file_type == 'hocr':
-        export_result(documents_pred, os.path.join('data', f'export_hocr'))
 
 
 if __name__ == '__main__':
