@@ -46,7 +46,7 @@ def predict_transitions_numbering(document: Document) -> Document:
         else:
             # No valid continuation found... check if it is a new level
             for section_number in candidates:
-                if section_number.number is None or section_number.number <= 1:
+                if isinstance(section_number.number, str) or section_number.number <= 1:
                     numbered_list.append(section_number)
                     anchors.append(i)
                     labels.append(ListAction.DOWN)
@@ -83,7 +83,7 @@ def main(file_type: str):
     if file_type == 'pdf':
         documents = loader.pdf.load_from_directory(os.path.join('data', 'raw'), annos)
     else:
-        documents = loader.pdf.load_from_directory(os.path.join('data', 'raw'), annos)
+        documents = loader.text.load_from_directory(os.path.join('data', 'raw'), annos)
 
     documents_pred = [predict_transitions_numbering(document)
                       for document in documents]
