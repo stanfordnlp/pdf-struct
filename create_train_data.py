@@ -12,6 +12,9 @@ def process_hocr(in_path, out_path):
         html_doc = fin.read()
     span_boxes_lst = loader.hocr.parse_hocr(html_doc)
 
+    if len(span_boxes_lst) == 0:
+        raise RuntimeError(f'No text boxes found for document "{in_path}".')
+
     with open(out_path, 'w') as fout:
         for i, span_boxes in enumerate(span_boxes_lst):
             for span in span_boxes:
@@ -21,6 +24,9 @@ def process_hocr(in_path, out_path):
 def process_pdf(in_path, out_path):
     with open(in_path, 'rb') as fin:
         text_boxes = list(loader.pdf.parse_pdf(fin))
+
+    if len(text_boxes) == 0:
+        raise RuntimeError(f'No text boxes found for document "{in_path}".')
 
     text_boxes = loader.pdf.TextBox.merge_continuous_lines(
         text_boxes, space_size=4)
@@ -33,6 +39,10 @@ def process_pdf(in_path, out_path):
 def process_text(in_path, out_path):
     with open(in_path) as fin:
         text_lines = loader.text.TextLine.from_lines([line for line in fin])
+
+    if len(text_lines) == 0:
+        raise RuntimeError(f'No text boxes found for document "{in_path}".')
+
     with open(out_path, 'w') as fout:
         for line in text_lines:
             fout.write(f'{line.text}\t0\t\n')
