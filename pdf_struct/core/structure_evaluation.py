@@ -4,8 +4,8 @@ import numpy as np
 from sklearn.metrics import confusion_matrix, accuracy_score, f1_score, \
     recall_score, precision_score
 
-from pdf_struct.core.predictor import ListAction
 from pdf_struct.core.document import Document
+from pdf_struct.core.predictor import ListAction
 
 
 def create_hierarchy_matrix(document: Document) -> np.array:
@@ -65,7 +65,7 @@ def _calc_metrics(ys_true: List[List[int]], ys_pred: List[List[int]],
              f1_score(y_true == j, y_pred == j))
             if np.any(y_true == j) else
             (np.nan, np.nan, np.nan)
-            for j in (0, 1, 2, 3, 4)])
+            for j in range(len(labels))])
         accuracies.append(accuracy_score(y_true, y_pred))
 
     metrics = np.array(metrics)
@@ -92,11 +92,10 @@ def _calc_metrics(ys_true: List[List[int]], ys_pred: List[List[int]],
 
     ret = {label: _get_metrics(i) for i, label in enumerate(labels)}
     ret['accuracy'] = {
-            'micro': accuracy_score(ys_true, ys_pred),
-            'macro': np.mean(accuracies)
+        'micro': accuracy_score(ys_true, ys_pred),
+        'macro': np.mean(accuracies)
     }
     return ret
-
 
 
 def evaluate_structure(documents_true: List[Document], documents_pred: List[Document]):
