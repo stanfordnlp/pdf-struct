@@ -2,9 +2,9 @@ click==7.1.2
 numpy==1.19.1
 pdfminer.six==20200726
 regex==2020.7.14
-torch==1.6.0
+torch==1.9.0
 tqdm==4.48.0
-transformers==3.0.2
+transformers==4.9.1
 sklearn==0.0
 joblib==1.0.0
 editdistance==0.5.3
