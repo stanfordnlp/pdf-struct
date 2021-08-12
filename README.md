@@ -2,11 +2,11 @@
 
 ## Prerequisite
 
-This program runs on Python 3 (tested on 3.8.5).
+This program runs on Python 3 (tested on 3.9.5).
 To install dependencies, run:
 
 ```bash
-pip install -r requirements.txt
+pip install -r requirements.txt -f https://download.pytorch.org/whl/torch_stable.html
 ```
 
 ## How to run
