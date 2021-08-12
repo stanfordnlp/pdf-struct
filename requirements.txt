@@ -9,3 +9,4 @@ sklearn==0.0
 joblib==1.0.0
 editdistance==0.5.3
 beautifulsoup4==4.9.3
+sentencepiece==0.1.96

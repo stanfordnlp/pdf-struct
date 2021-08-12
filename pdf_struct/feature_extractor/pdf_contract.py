@@ -12,7 +12,7 @@ from pdf_struct.core.utils import pairwise
 from pdf_struct.features import lexical
 from pdf_struct.features.listing import MultiLevelNumberedList, SectionNumber, \
     NumberedListState
-from pdf_struct.features.lm import compare_losses
+from pdf_struct.features.lm import compare_losses, init_lm
 
 
 def get_pdf_margin(clusters, n_pages):
@@ -165,6 +165,10 @@ class BasePDFFeatureExtractor(BaseFeatureExtractor):
 
 
 class PDFContractEnFeatureExtractor(BasePDFFeatureExtractor):
+    def __init__(self, text_boxes):
+        super(PDFContractEnFeatureExtractor, self).__init__(text_boxes)
+        init_lm('en')
+
     @single_input_feature([1, 2])
     def dict_like(self, tb):
         if tb is None:

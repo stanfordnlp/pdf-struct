@@ -1,3 +1,6 @@
+# Calculate LM scores based using huggingface transformers
+# FIXME: This is a really inefficient implementation that copies the model
+# for every joblib job. Try deploy the model on a server in the future.
 from typing import List, Optional
 
 
@@ -5,12 +8,34 @@ import torch
 import transformers
 
 
-model = transformers.GPT2LMHeadModel.from_pretrained("gpt2")
-model.eval()
-if torch.cuda.is_available():
-    model.to(torch.device('cuda:0'))
+model = None
+tokenizer = None
+model_lang = None
 
-tokenizer = transformers.GPT2Tokenizer.from_pretrained("gpt2")
+
+def init_lm(lang):
+    # this function is idempotent
+    global model, tokenizer, model_lang
+    if model_lang is not None:
+        if model_lang != lang:
+            raise ValueError(
+                f'init_lm called with different langs ("{lang}" and {model_lang})'
+                ' on a single execution.')
+        return
+    if lang == 'en':
+        model = transformers.AutoModelForCausalLM.from_pretrained("gpt2")
+        tokenizer = transformers.GPT2Tokenizer.from_pretrained("gpt2")
+    elif lang == 'ja':
+        model = transformers.AutoModelForCausalLM.from_pretrained(
+            "rinna/japanese-gpt2-medium")
+        tokenizer = transformers.T5Tokenizer.from_pretrained("rinna/japanese-gpt2-medium")
+        tokenizer.do_lower_case = True  # due to some bug of tokenizer config loading
+    else:
+        raise ValueError(f'init_lm only supports ja or en but {lang} was given.')
+    model.eval()
+    if torch.cuda.is_available():
+        model.to(torch.device('cuda:0'))
+    model_lang = lang
 
 
 def _get_masked_loss(token_ids: List[int], next: Optional[List[int]]=None,
@@ -32,6 +57,9 @@ def _get_masked_loss(token_ids: List[int], next: Optional[List[int]]=None,
         
 
 def compare_losses(cand1, cand2, prev=None, next=None):
+    if model is None:
+        raise ValueError('init_lm should be called before running compare_losses.')
+
     if prev is None == next is None:
         raise ValueError('One and only one of prev and next should be specified.')
 
