@@ -13,7 +13,7 @@ tokenizer = None
 model_lang = None
 
 
-def init_lm(lang):
+def _init_lm(lang):
     # this function is idempotent
     global model, tokenizer, model_lang
     if model_lang is not None:
@@ -56,10 +56,8 @@ def _get_masked_loss(token_ids: List[int], next: Optional[List[int]]=None,
     return model(token_ids, labels=labels)[0].item()
         
 
-def compare_losses(cand1, cand2, prev=None, next=None):
-    if model is None:
-        raise ValueError('init_lm should be called before running compare_losses.')
-
+def compare_losses(lang: str, cand1, cand2, prev=None, next=None):
+    _init_lm(lang)
     if prev is None == next is None:
         raise ValueError('One and only one of prev and next should be specified.')
 

@@ -12,7 +12,7 @@ from pdf_struct.core.utils import pairwise
 from pdf_struct.features import lexical
 from pdf_struct.features.listing import MultiLevelNumberedList, SectionNumber, \
     NumberedListState
-from pdf_struct.features.lm import compare_losses, init_lm
+from pdf_struct.features.lm import compare_losses
 
 
 def get_pdf_margin(clusters, n_pages):
@@ -165,10 +165,6 @@ class BasePDFFeatureExtractor(BaseFeatureExtractor):
 
 
 class PDFContractEnFeatureExtractor(BasePDFFeatureExtractor):
-    def __init__(self, text_boxes):
-        super(PDFContractEnFeatureExtractor, self).__init__(text_boxes)
-        init_lm('en')
-
     @single_input_feature([1, 2])
     def dict_like(self, tb):
         if tb is None:
@@ -209,8 +205,8 @@ class PDFContractEnFeatureExtractor(BasePDFFeatureExtractor):
             loss_diff_next = 0.
             loss_diff_prev = 0.
         else:
-            loss_diff_next = compare_losses(tb2.text, tb3.text, prev=tb1.text)
-            loss_diff_prev = compare_losses(tb2.text, tb1.text, next=tb3.text)
+            loss_diff_next = compare_losses('en', tb2.text, tb3.text, prev=tb1.text)
+            loss_diff_prev = compare_losses('en', tb2.text, tb1.text, next=tb3.text)
         return {
             'loss_diff_next': loss_diff_next,
             'loss_diff_prev': loss_diff_prev

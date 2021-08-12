@@ -8,7 +8,7 @@ from pdf_struct.feature_extractor.pdf_contract import BasePDFFeatureExtractor
 from pdf_struct.features import lexical
 from pdf_struct.features.listing import MultiLevelNumberedList, SectionNumberJa, \
     NumberedListState
-from pdf_struct.features.lm import compare_losses, init_lm
+from pdf_struct.features.lm import compare_losses
 
 
 def _gt(tb) -> Optional[str]:
@@ -17,10 +17,6 @@ def _gt(tb) -> Optional[str]:
 
 
 class PDFContractJaFeatureExtractor(BasePDFFeatureExtractor):
-    def __init__(self, text_boxes):
-        super(PDFContractJaFeatureExtractor, self).__init__(text_boxes)
-        init_lm('ja')
-
     @single_input_feature([0, 1, 2])
     def page_like(self, tb):
         if tb is None:
@@ -55,8 +51,8 @@ class PDFContractJaFeatureExtractor(BasePDFFeatureExtractor):
             loss_diff_next = 0.
             loss_diff_prev = 0.
         else:
-            loss_diff_next = compare_losses(tb2.text, tb3.text, prev=tb1.text)
-            loss_diff_prev = compare_losses(tb2.text, tb1.text, next=tb3.text)
+            loss_diff_next = compare_losses('ja', tb2.text, tb3.text, prev=tb1.text)
+            loss_diff_prev = compare_losses('ja', tb2.text, tb1.text, next=tb3.text)
         return {
             'loss_diff_next': loss_diff_next,
             'loss_diff_prev': loss_diff_prev

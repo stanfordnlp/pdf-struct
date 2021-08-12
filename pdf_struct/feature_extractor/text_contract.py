@@ -9,7 +9,7 @@ from pdf_struct.features import lexical
 from pdf_struct.features.listing import get_text_body_indent
 from pdf_struct.features.listing import MultiLevelNumberedList, SectionNumber, \
     NumberedListState
-from pdf_struct.features.lm import compare_losses, init_lm
+from pdf_struct.features.lm import compare_losses
 
 
 def _gt(tb) -> Optional[str]:
@@ -21,7 +21,6 @@ class TextContractFeatureExtractor(BaseFeatureExtractor):
     def __init__(self, text_lines):
         self.right_margin = get_margins(
             cluster_positions([l.width for l in text_lines], 8)[0][::-1], 5)
-        init_lm('en')
 
     @pairwise_feature([(0, 1), (1, 2)])
     def line_break(self, t1, t2):
@@ -118,8 +117,8 @@ class TextContractFeatureExtractor(BaseFeatureExtractor):
             loss_diff_next = 0.
             loss_diff_prev = 0.
         else:
-            loss_diff_next = compare_losses(tb2.text, tb3.text, prev=tb1.text)
-            loss_diff_prev = compare_losses(tb2.text, tb1.text, next=tb3.text)
+            loss_diff_next = compare_losses('en', tb2.text, tb3.text, prev=tb1.text)
+            loss_diff_prev = compare_losses('en', tb2.text, tb1.text, next=tb3.text)
         return {
             'loss_diff_next': loss_diff_next,
             'loss_diff_prev': loss_diff_prev
