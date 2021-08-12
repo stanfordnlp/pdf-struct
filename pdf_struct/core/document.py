@@ -37,15 +37,15 @@ class Document(object):
         # features to be used at train time. This is created with an access
         # to the labels
         self.feats: Optional[Dict[str, Dict[str, List[float]]]] = feats
-        self.feature_array = self._create_feature_array(feats)
+        self.feature_array = self._get_feature_matrix(feats)
         # features to be used at test time. This is created without an access
         # to the labels
         self.feats_test: Dict[str, Dict[str, List[float]]] = feats_test
-        self.feature_array_test = self._create_feature_array(feats_test)
+        self.feature_array_test = self._get_feature_matrix(feats_test)
 
         self.pointer_feats: Optional[Dict[str, Dict[str, List[float]]]] = pointer_feats
         if len(pointer_feats) > 0:
-            self.pointer_feats_array = self._create_feature_array(pointer_feats)
+            self.pointer_feats_array = self._get_feature_matrix(pointer_feats)
         else:
             self.pointer_feats_array = []
         self.pointer_candidates: Optional[List[Tuple[int, int]]] = pointer_candidates
@@ -64,22 +64,29 @@ class Document(object):
     def n_pointer_features(self):
         return None if self.pointer_feats is None else sum(map(len, self.pointer_feats.values()))
 
+    def get_feature_names(self):
+        return [k for k, _ in self._unpack_features(self.feats_test)]
+
     @staticmethod
-    def _create_feature_array(feats) -> Optional[List[List[float]]]:
+    def _get_feature_matrix(feats) -> Optional[List[List[float]]]:
         if feats is None:
             return None
         n_blocks = len(list(list(feats.values())[0].values())[0])
         # List of list of size (n_blocks, n_feats)
         features = [[] for _ in range(n_blocks)]
-        for feature in Document.unpack_features(feats):
+        for _, feature in Document._unpack_features(feats):
             for j, f in enumerate(feature):
                 features[j].append(float(f))
         return features
 
     @staticmethod
-    def unpack_features(features):
+    def get_feature_array(features):
+        return [v for _, v in Document._unpack_features(features)]
+
+    @staticmethod
+    def _unpack_features(features):
         return [
-            v for _, v in sorted(
+            (k, v) for k, v in sorted(
                 chain(*[fg.items() for fg in features.values()]),
                 key=lambda k_v: k_v[0])
         ]

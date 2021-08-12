@@ -70,7 +70,7 @@ def predict_with_classifiers(clf, clf_ptr, documents: List[Document], used_featu
             # still execute extract_features even if d.labels[i] != ListAction.ELIMINATE
             # to make the state consistent
             feat, states = d.feature_extractor.extract_features(tb1, tb2, tb3, tb4, states)
-            feat = np.array([d.unpack_features(feat)])
+            feat = np.array([d.get_feature_array(feat)])
             if used_features is not None:
                 feat = feat[:, used_features]
             if d.labels[i] != ListAction.ELIMINATE:
@@ -85,7 +85,7 @@ def predict_with_classifiers(clf, clf_ptr, documents: List[Document], used_featu
                     if d.labels[i] == ListAction.DOWN:
                         feat = d.feature_extractor.extract_pointer_features(
                             d.text_blocks, d.labels[:j], i, j)
-                        X_test_ptr.append(d.unpack_features(feat))
+                        X_test_ptr.append(d.get_feature_array(feat))
                         ptr_candidates.append(i)
             if len(X_test_ptr) > 0:
                 pointers.append(ptr_candidates[np.argmax(

@@ -24,9 +24,11 @@ def single_run(documents, feature_indices, i):
     structure_metrics = evaluate_structure(documents, documents_pred)
     label_metrics = evaluate_labels(documents, documents_pred,
                                     confusion_matrix=False)
+    feature_names = documents[0].get_feature_names()
     return {
-        'target_feature': i,
-        'used_features': feature_indices,
+        'target_feature': feature_names[i],
+        'target_feature_index': i,
+        'used_features': [feature_names[j] for j in feature_indices],
         'structure_metrics': structure_metrics,
         'label_metrics': label_metrics
     }
@@ -67,6 +69,8 @@ def main(search_method: str, n_rounds: int, n_jobs: int, file_type: str,
         else:
             n_rounds = documents[0].n_features - 1
     all_feature_indices = set(range(documents[0].n_features))
+    print(f'Search amongst {len(all_feature_indices)} features with '
+          f'"{search_method}" appoach.')
     results = []
     cur_feature_indices = set()
     for round in range(n_rounds):
@@ -88,9 +92,9 @@ def main(search_method: str, n_rounds: int, n_jobs: int, file_type: str,
                 results_round,
                 key=lambda r: r['label_metrics']['accuracy']['micro'])
 
-        print(f'Chosen feature #{result_chosen["target_feature"]} with accuracy '
-              f'{result_chosen["label_metrics"]["accuracy"]["micro"]}')
-        cur_feature_indices.add(result_chosen["target_feature"])
+        print(f'Chosen feature "{result_chosen["target_feature"]}" with accuracy'
+              f' {result_chosen["label_metrics"]["accuracy"]["micro"]}')
+        cur_feature_indices.add(result_chosen["target_feature_index"])
         results.append({
             'round': round,
             'chosen_feature': result_chosen["target_feature"],
