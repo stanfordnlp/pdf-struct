@@ -107,7 +107,23 @@ def evaluate_structure(documents_true: List[Document], documents_pred: List[Docu
     ms_pred = [
         np.concatenate([r[i + 1:] for i, r in enumerate(create_hierarchy_matrix(d))])
         for d in documents_pred]
-    return _calc_metrics(ms_true, ms_pred, ['same_paragraph', 'same_level', 'parent_child'])
+    metrics = _calc_metrics(ms_true, ms_pred, ['same_paragraph', 'same_level', 'parent_child'])
+    metrics.update({
+        'average_f1': {
+            'micro': float(np.average([
+                metrics['same_paragraph']['micro']['f1'],
+                metrics['same_level']['micro']['f1'],
+                metrics['parent_child']['micro']['f1']
+            ])),
+            'macro': float(np.average([
+                metrics['same_paragraph']['macro']['f1'],
+                metrics['same_level']['macro']['f1'],
+                metrics['parent_child']['macro']['f1']
+            ]))
+        }
+
+    })
+    return metrics
 
 
 def print_confusion_matrix(y_true, y_pred):
