@@ -144,7 +144,7 @@ def filter_text_blocks(text_blocks, labels, pointers):
                 p = -1
             else:
                 p = pointers[i]
-                assert p >= 0
+                assert len(_pointers) > p >= 0
             _pointers.append(p)
             _text_boxes.append(text_blocks[i])
         else:
@@ -152,7 +152,7 @@ def filter_text_blocks(text_blocks, labels, pointers):
             for p in pointers:
                 if p is None:
                     pointers_tmp.append(None)
-                elif p > i:
+                elif p > len(_labels):
                     pointers_tmp.append(p - 1)
                 else:
                     pointers_tmp.append(p)
