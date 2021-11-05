@@ -1,14 +1,20 @@
 import glob
 import json
 import os
+import sys
+from typing import Optional
 
 import click
+import joblib
 import tqdm
 
 from pdf_struct import loader, feature_extractor
 from pdf_struct.core import transition_labels
-from pdf_struct.core.evaluation import evaluate
 from pdf_struct.core.data_statistics import get_documents_statistics
+from pdf_struct.core.evaluation import evaluate
+from pdf_struct.core.export import to_paragraphs
+from pdf_struct.core.predictor import train_classifiers, \
+    predict_with_classifiers
 
 
 @click.group()
@@ -34,7 +40,7 @@ def init_dataset(file_type, indir, outdir):
               help='Dump prediction as a JSONL file.')
 @click.option('--metrics', type=click.Path(exists=False), default=None,
               help='Dump metrics as a JSON file.')
-@click.argument('file-type', type=click.Choice(('hocr', 'txt', 'pdf')))
+@click.argument('file-type', type=click.Choice(tuple(loader.modules.keys())))
 @click.argument('feature',
                 type=click.Choice(tuple(feature_extractor.feature_extractors.keys())))
 @click.argument('raw-dir', type=click.Path(exists=True))
@@ -68,11 +74,72 @@ def _evaluate(k_folds: int, prediction, metrics, file_type: str, feature: str, r
             json.dump(metrics, fout, indent=2)
 
 
-@cli.command('data-stats')
-@click.argument('file-type', type=click.Choice(('txt', 'pdf')))
+@cli.command()
+@click.argument('file-type', type=click.Choice(tuple(loader.modules.keys())))
+@click.argument('feature',
+                type=click.Choice(tuple(feature_extractor.feature_extractors.keys())))
 @click.argument('raw-dir', type=click.Path(exists=True))
 @click.argument('anno-dir', type=click.Path(exists=True))
-def dat_stats(file_type: str, raw_dir: str, anno_dir: str):
+@click.argument('out-path', type=click.Path(exists=False))
+def train(file_type: str, feature: str, raw_dir: str, anno_dir: str, out_path: str):
+    if file_type == 'hocr':
+        raise NotImplementedError('data-stats does not currently support hocr')
+
+    print(f'Loading annotations from {anno_dir}')
+    annos = transition_labels.load_annos(anno_dir)
+
+    print('Loading raw files')
+    documents = loader.modules[file_type].load_from_directory(raw_dir, annos)
+
+    feature_extractor_cls = feature_extractor.feature_extractors[feature]
+    print('Extracting features from documents')
+    documents = [feature_extractor_cls.append_features_to_document(document)
+                 for document in tqdm.tqdm(documents)]
+
+    print('Training a model')
+    clf, clf_ptr = train_classifiers(documents)
+    joblib.dump((clf, clf_ptr, feature_extractor_cls), out_path)
+    print(f'Model successfully dumped at {out_path}')
+
+
+@cli.command()
+@click.option('-o', '--out', type=click.Path(exists=False), default=None)
+@click.option('-f', '--format', type=click.Choice(('paragraphs', 'tabbed')), default='paragraphs')
+@click.argument('file-type', type=click.Choice(tuple(loader.modules.keys())))
+@click.argument('model-path', type=click.Path(exists=True))
+@click.argument('in-path', type=click.Path(exists=True))
+def predict(out: Optional[str], format: str, file_type: str, model_path: str, in_path: str):
+    # FIXME: Allow pickling loader so that it does not need to take file_type as an argument
+    if file_type == 'hocr':
+        raise NotImplementedError('data-stats does not currently support hocr')
+
+    clf, clf_ptr, feature_extractor_cls = joblib.load(model_path)
+    document = loader.modules[file_type].load_document(in_path, None, None)
+    document = feature_extractor_cls.append_features_to_document(document)
+
+    if out is None:
+        out_ = sys.stdout
+    else:
+        out_ = open(out, 'w')
+    if format in ('paragraphs', 'tabbed'):
+        pred = predict_with_classifiers(clf, clf_ptr, [document])[0]
+        if format == 'paragraphs':
+            for paragraph, _ in to_paragraphs(pred):
+                out_.write(paragraph + '\n')
+        else:
+            for paragraph, level in to_paragraphs(pred):
+                out_.write('\t' * level + paragraph + '\n')
+    if out is not None:
+        out_.close()
+
+
+@cli.command('data-stats')
+@click.argument('file-type', type=click.Choice(tuple(loader.modules.keys())))
+@click.argument('raw-dir', type=click.Path(exists=True))
+@click.argument('anno-dir', type=click.Path(exists=True))
+def data_stats(file_type: str, raw_dir: str, anno_dir: str):
+    if file_type == 'hocr':
+        raise NotImplementedError('data-stats does not currently support hocr')
     print(f'Loading annotations from {anno_dir}')
     annos = transition_labels.load_annos(anno_dir)
 
