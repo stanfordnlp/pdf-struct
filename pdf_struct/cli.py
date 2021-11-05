@@ -12,7 +12,7 @@ from pdf_struct import loader, feature_extractor
 from pdf_struct.core import transition_labels
 from pdf_struct.core.data_statistics import get_documents_statistics
 from pdf_struct.core.evaluation import evaluate
-from pdf_struct.core.export import to_paragraphs
+from pdf_struct.core.export import to_paragraphs, to_tree
 from pdf_struct.core.predictor import train_classifiers, \
     predict_with_classifiers
 
@@ -104,7 +104,7 @@ def train(file_type: str, feature: str, raw_dir: str, anno_dir: str, out_path: s
 
 @cli.command()
 @click.option('-o', '--out', type=click.Path(exists=False), default=None)
-@click.option('-f', '--format', type=click.Choice(('paragraphs', 'tabbed')), default='paragraphs')
+@click.option('-f', '--format', type=click.Choice(('paragraphs', 'tabbed', 'tree')), default='paragraphs')
 @click.argument('file-type', type=click.Choice(tuple(loader.modules.keys())))
 @click.argument('model-path', type=click.Path(exists=True))
 @click.argument('in-path', type=click.Path(exists=True))
@@ -121,14 +121,20 @@ def predict(out: Optional[str], format: str, file_type: str, model_path: str, in
         out_ = sys.stdout
     else:
         out_ = open(out, 'w')
+    pred = predict_with_classifiers(clf, clf_ptr, [document])[0]
     if format in ('paragraphs', 'tabbed'):
-        pred = predict_with_classifiers(clf, clf_ptr, [document])[0]
+        paragraphs = to_paragraphs(pred)
         if format == 'paragraphs':
-            for paragraph, _ in to_paragraphs(pred):
+            for paragraph, _ in paragraphs:
                 out_.write(paragraph + '\n')
         else:
-            for paragraph, level in to_paragraphs(pred):
+            for paragraph, level in paragraphs:
                 out_.write('\t' * level + paragraph + '\n')
+    elif format == 'tree':
+        pred = to_tree(pred)
+        out_.write(json.dumps(pred, indent=2))
+    else:
+        assert not 'Should not get here'
     if out is not None:
         out_.close()
 

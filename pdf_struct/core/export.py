@@ -1,4 +1,10 @@
+from itertools import chain
+from typing import List
+
+import numpy as np
+
 from pdf_struct.core.document import Document
+from pdf_struct.core.structure_evaluation import create_hierarchy_matrix
 from pdf_struct.core.transition_labels import ListAction
 
 
@@ -37,3 +43,65 @@ def to_paragraphs(document: Document, insert_space=True):
     assert len(levels) == len(document.labels)
     assert len(paragraphs) == len(paragraph_levels)
     return list(zip(paragraphs, paragraph_levels))
+
+
+def get_birelationship(hierarchy_matrix, target: int, relation: int) -> List[int]:
+    assert relation in [0, 1]
+    return sorted(set(np.where(hierarchy_matrix[target, :] == relation)[0]) |
+                  set(np.where(hierarchy_matrix[:, target] == relation)[0]))
+
+
+def to_tree(document: Document, insert_space=True):
+    sep = ' ' if insert_space else ''
+    m = create_hierarchy_matrix(document)
+    import pdb; pdb.set_trace()
+    assert len(m) == len(document.text_blocks)
+    # since m is an upper triangle matrix, incorporate flipped matrix to
+    # incorporate bidirectionality to SAME_LEVEL
+    m[m.T == ListAction.SAME_LEVEL.value] = m.T[m.T  == ListAction.SAME_LEVEL.value]
+    text_boxes = []
+    already_added = [False] * len(m)
+    id2idx = []
+    for i in range(len(document.text_blocks)):
+        if document.labels[i] == ListAction.ELIMINATE:
+            assert not already_added[i]
+            text_boxes.append({
+                'text': document.text_blocks[i].text,
+                'siblings': [],
+                'ancestors': [],
+                'parent': None,
+                'descendents': [],
+                'children': [],
+                'eliminated': True
+            })
+        elif not already_added[i]:
+            continual = get_birelationship(m, i, 0)
+            siblings = get_birelationship(m, i, 1)
+            ancestors = sorted(np.where(m[:, i] == 2)[0])
+            parent = ancestors[-1] if len(ancestors) > 0 else None
+            descendents = sorted(np.where(m[i, :] == 2)[0])
+            if len(descendents) > 0:
+                children = get_birelationship(m, descendents[0], 1)
+            else:
+                children = []
+            assert set(descendents).issuperset(set(children))
+
+            text_boxes.append({
+                'text': sep.join((document.text_blocks[j].text for j in chain([i], continual))),
+                'siblings': siblings,
+                'ancestors': ancestors,
+                'parent': parent,
+                'descendents': descendents,
+                'children': children,
+                'eliminated': False
+            })
+            for j in continual:
+                assert j > i
+                already_added[j] = True
+        id2idx.append(len(text_boxes) - 1)
+    # now convert all ids to current indices
+    for i in range(len(text_boxes)):
+        for key in ('siblings', 'ancestors', 'descendents', 'children'):
+            text_boxes[i][key] = sorted({id2idx[id_] for id_ in text_boxes[i][key]} - {i})
+        text_boxes[i]['parent'] = None if text_boxes[i]['parent'] is None else id2idx[text_boxes[i]['parent']]
+    return text_boxes
