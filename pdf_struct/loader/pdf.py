@@ -147,3 +147,18 @@ def load_from_directory(base_dir: str, annos: AnnoListType) -> List[Document]:
         except PDFDocumentLoadingError as e:
             print(f'Loading "{path}" failed. {e}')
     return documents
+
+
+def create_training_data(in_path, out_path):
+    with open(in_path, 'rb') as fin:
+        text_boxes = list(parse_pdf(fin))
+
+    if len(text_boxes) == 0:
+        raise RuntimeError(f'No text boxes found for document "{in_path}".')
+
+    text_boxes = TextBox.merge_continuous_lines(
+        text_boxes, space_size=4)
+
+    with open(out_path, 'w') as fout:
+        for tb in text_boxes:
+            fout.write(f'{tb.text}\t0\t\n')

@@ -17,7 +17,7 @@ class Document(object):
                  labels: Optional[List[ListAction]],
                  pointers: Optional[List[Optional[int]]],
                  cv_key: str):
-        assert len(texts) == len(labels)
+        assert labels is None or len(texts) == len(labels)
         self.path: str = path
         self.texts: List[str] = texts
         self.text_blocks: List[TextBlock] = text_blocks
@@ -44,7 +44,7 @@ class Document(object):
         self.feature_array_test = self._get_feature_matrix(feats_test)
 
         self.pointer_feats: Optional[Dict[str, Dict[str, List[float]]]] = pointer_feats
-        if len(pointer_feats) > 0:
+        if pointer_feats is not None and len(pointer_feats) > 0:
             self.pointer_feats_array = self._get_feature_matrix(pointer_feats)
         else:
             self.pointer_feats_array = []

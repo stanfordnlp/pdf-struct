@@ -10,13 +10,6 @@ from pdf_struct.core import predictor, transition_labels
 from pdf_struct.core.structure_evaluation import evaluate_structure, \
     evaluate_labels
 
-feature_extractor_dict = {
-    'HOCRFeatureExtractor': feature_extractor.HOCRFeatureExtractor,
-    'PDFContractEnFeatureExtractor': feature_extractor.PDFContractEnFeatureExtractor,
-    'PDFContractJaFeatureExtractor': feature_extractor.PDFContractJaFeatureExtractor,
-    'TextContractFeatureExtractor': feature_extractor.TextContractFeatureExtractor
-}
-
 
 def single_run(documents, feature_indices, i):
     documents_pred = predictor.k_fold_train_predict(
@@ -41,7 +34,7 @@ def single_run(documents, feature_indices, i):
 @click.option('--n-rounds', type=int, default=0)
 @click.option('--n-jobs', type=int, default=1)
 @click.argument('file-type', type=click.Choice(('hocr', 'txt', 'pdf')))
-@click.argument('feature', type=click.Choice(tuple(feature_extractor_dict.keys())))
+@click.argument('feature', type=click.Choice(tuple(feature_extractor.feature_extractors.keys())))
 @click.argument('raw-dir', type=click.Path(exists=True))
 @click.argument('anno-dir', type=click.Path(exists=True))
 @click.argument('out-path', type=click.Path(exists=False))
@@ -51,15 +44,10 @@ def main(search_method: str, n_rounds: int, n_jobs: int, file_type: str,
     annos = transition_labels.load_annos(anno_dir)
 
     print('Loading raw files')
-    if file_type == 'hocr':
-        documents = loader.hocr.load_from_directory(raw_dir, annos)
-    elif file_type == 'pdf':
-        documents = loader.pdf.load_from_directory(raw_dir, annos)
-    else:
-        documents = loader.text.load_from_directory(raw_dir, annos)
+    documents = loader.modules[file_type].load_from_directory(raw_dir, annos)
 
     print('Extracting features from documents')
-    feature_extractor_cls = feature_extractor_dict[feature]
+    feature_extractor_cls = feature_extractor.feature_extractors[feature]
     documents = [feature_extractor_cls.append_features_to_document(document)
                  for document in tqdm.tqdm(documents)]
 

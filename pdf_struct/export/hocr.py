@@ -5,14 +5,9 @@ from typing import List
 
 import numpy as np
 
-from pdf_struct.core.structure_evaluation import create_hierarchy_matrix
 from pdf_struct.core.document import Document
-
-
-def get_birelationship(hierarchy_matrix, target: int, relation: int) -> List[int]:
-    assert relation in [0, 1]
-    return sorted(set(np.where(hierarchy_matrix[target, :] == relation)[0]) |
-                  set(np.where(hierarchy_matrix[:, target] == relation)[0]))
+from pdf_struct.core.export import get_birelationship
+from pdf_struct.core.structure_evaluation import create_hierarchy_matrix
 
 
 def to_ids(cell: Document, indices: List[int]) -> List[str]:

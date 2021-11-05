@@ -177,3 +177,17 @@ def load_from_directory(base_dir: str, annos: AnnoListType) -> List[Document]:
         except HOCRDocumentLoadingError as e:
             print(f'Loading "{path}" failed. {e}')
     return documents
+
+
+def create_training_data(in_path, out_path):
+    with open(in_path) as fin:
+        html_doc = fin.read()
+    span_boxes_lst = parse_hocr(html_doc)
+
+    if len(span_boxes_lst) == 0:
+        raise RuntimeError(f'No text boxes found for document "{in_path}".')
+
+    with open(out_path, 'w') as fout:
+        for i, span_boxes in enumerate(span_boxes_lst):
+            for span in span_boxes:
+                fout.write(f'{i:>05d} {span.text}\t0\t\n')

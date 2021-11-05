@@ -1,14 +1,12 @@
-import json
-import os
+from typing import List
 
-import click
 import numpy as np
 
-from pdf_struct.core.transition_labels import load_annos, ListAction
-from pdf_struct import loader
+from pdf_struct.core.document import Document
+from pdf_struct.core.transition_labels import ListAction
 
 
-def get_max_depth(document):
+def get_max_depth(document: Document):
     levels = [0]
     for l, p in zip(document.labels[:-1], document.pointers[:-1]):
         if l == ListAction.DOWN:
@@ -30,22 +28,9 @@ def get_measures(values: list):
     }
 
 
-@click.command()
-@click.argument('file-type', type=click.Choice(('txt', 'pdf')))
-@click.argument('raw-dir', type=click.Path(exists=True))
-@click.argument('anno-dir', type=click.Path(exists=True))
-def main(file_type: str, raw_dir: str, anno_dir: str):
-    print(f'Loading annotations from {anno_dir}')
-    annos = load_annos(anno_dir)
-
-    print('Loading and extracting features from raw files')
-    if file_type == 'pdf':
-        documents = loader.pdf.load_from_directory(raw_dir, annos)
-    else:
-        documents = loader.text.load_from_directory(raw_dir, annos)
-
+def get_documents_statistics(documents: List[Document]):
     max_depths = [get_max_depth(d) for d in documents]
-    print(json.dumps({
+    return {
         'n_text_blocks': get_measures([len(d.text_blocks) for d in documents]),
         'max_depth': get_measures(max_depths),
         'label_counts': {
@@ -82,8 +67,4 @@ def main(file_type: str, raw_dir: str, anno_dir: str):
                 [len([l for l in d.labels if l == ListAction.ELIMINATE]) / len(d.labels)
                  for d in documents])
         }
-    }, indent=2))
-
-
-if __name__ == '__main__':
-    main()
+    }
