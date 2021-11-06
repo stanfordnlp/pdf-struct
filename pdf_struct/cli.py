@@ -29,6 +29,7 @@ from pdf_struct.core.evaluation import evaluate
 from pdf_struct.core.export import to_paragraphs, to_tree
 from pdf_struct.core.predictor import train_classifiers, \
     predict_with_classifiers
+from pdf_struct.core.download import cached_model_download
 
 
 @click.group()
@@ -119,15 +120,20 @@ def train(file_type: str, feature: str, raw_dir: str, anno_dir: str, out_path: s
 @cli.command()
 @click.option('-o', '--out', type=click.Path(exists=False), default=None)
 @click.option('-f', '--format', type=click.Choice(('paragraphs', 'tabbed', 'tree')), default='paragraphs')
+@click.option('-m', '--model', type=str, default=None)
+@click.option('-p', '--path', type=click.Path(exists=False), default=None)
 @click.argument('file-type', type=click.Choice(tuple(loader.modules.keys())))
-@click.argument('model-path', type=click.Path(exists=True))
 @click.argument('in-path', type=click.Path(exists=True))
-def predict(out: Optional[str], format: str, file_type: str, model_path: str, in_path: str):
+def predict(out: Optional[str], format: str, model: Optional[str],
+            path: Optional[str], file_type: str, in_path: str):
     # FIXME: Allow pickling loader so that it does not need to take file_type as an argument
     if file_type == 'hocr':
         raise NotImplementedError('data-stats does not currently support hocr')
-
-    clf, clf_ptr, feature_extractor_cls = joblib.load(model_path)
+    if (model is None) == (path is None):
+        raise click.UsageError('One and only one of --model and --path must be specified.')
+    if model is not None:
+        path = cached_model_download(model)
+    clf, clf_ptr, feature_extractor_cls = joblib.load(path)
     document = loader.modules[file_type].load_document(in_path, None, None)
     document = feature_extractor_cls.append_features_to_document(document)
 
