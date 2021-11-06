@@ -59,19 +59,6 @@ class PDFContractJaFeatureExtractor(BasePDFFeatureExtractor):
             'value': numbered_list_state.value,
             'states': states}
 
-    @feature()
-    def language_model_coherence(self, tb1, tb2, tb3, tb4):
-        if tb1 is None or tb3 is None:
-            loss_diff_next = 0.
-            loss_diff_prev = 0.
-        else:
-            loss_diff_next = compare_losses('ja', tb2.text, tb3.text, prev=tb1.text)
-            loss_diff_prev = compare_losses('ja', tb2.text, tb1.text, next=tb3.text)
-        return {
-            'loss_diff_next': loss_diff_next,
-            'loss_diff_prev': loss_diff_prev
-        }
-
     @single_input_feature([0, 1])
     def colon_ish(self, tb):
         if tb is None:
@@ -127,3 +114,19 @@ class PDFContractJaFeatureExtractor(BasePDFFeatureExtractor):
                 '3_next_of_head': SectionNumberJa.is_any_next_of(
                     section_numbers3, section_number_head)
             }
+
+
+class PDFContractJaFeatureExtractorWithLM(PDFContractJaFeatureExtractor):
+
+    @feature()
+    def language_model_coherence(self, tb1, tb2, tb3, tb4):
+        if tb1 is None or tb3 is None:
+            loss_diff_next = 0.
+            loss_diff_prev = 0.
+        else:
+            loss_diff_next = compare_losses('ja', tb2.text, tb3.text, prev=tb1.text)
+            loss_diff_prev = compare_losses('ja', tb2.text, tb1.text, next=tb3.text)
+        return {
+            'loss_diff_next': loss_diff_next,
+            'loss_diff_prev': loss_diff_prev
+        }
