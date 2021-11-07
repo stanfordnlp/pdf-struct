@@ -1,0 +1,1 @@
+from pdf_struct._version import __version__
