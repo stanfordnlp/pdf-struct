@@ -28,7 +28,7 @@ import sys
 import tempfile
 
 import filelock
-from six.moves.urllib import request
+import urllib
 
 _dataset_root = os.environ.get(
     'PDFSTRUCT_DATASET_ROOT',
@@ -74,7 +74,7 @@ def cached_download(url):
         temp_path = os.path.join(temp_root, 'dl')
         sys.stderr.write('Downloading from {}...\n'.format(url))
         sys.stderr.flush()
-        request.urlretrieve(url, temp_path)
+        urllib.request.urlretrieve(url, temp_path)
         with filelock.FileLock(lock_path):
             shutil.move(temp_path, cache_path)
 
@@ -83,7 +83,15 @@ def cached_download(url):
 
 def cached_model_download(model_name):
     url = get_model_url(model_name)
-    return cached_download(url)
+    try:
+        path = cached_download(url)
+    except urllib.error.HTTPError as e:
+        if e.code == 404:
+            return None
+        else:
+            raise e
+    return path
+
 
 
 @contextlib.contextmanager

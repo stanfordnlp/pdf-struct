@@ -129,6 +129,9 @@ def predict(out: Optional[str], format: str, model: Optional[str],
         raise click.UsageError('One and only one of --model and --path must be specified.')
     if model is not None:
         path = cached_model_download(model)
+        if path is None:
+            click.echo(f'Model "{model}" cannot be found. Aborting...', err=True)
+            exit(1)
     clf, clf_ptr, file_type, feature = joblib.load(path)
     document = loader.modules[file_type].load_document(in_path, None, None)
     feature_extractor_cls = feature_extractor.feature_extractors[feature]
