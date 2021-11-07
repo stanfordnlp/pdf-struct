@@ -36,7 +36,8 @@ _dataset_root = os.environ.get(
 
 
 _url_root = os.environ.get(
-    'PDFSTRUCT_URL_ROOT', 'http://localhost:8000/')
+    'PDFSTRUCT_URL_ROOT',
+    'https://raw.githubusercontent.com/stanfordnlp/pdf-struct-models/0.1.0/models/')
 
 
 def get_cache_root():
