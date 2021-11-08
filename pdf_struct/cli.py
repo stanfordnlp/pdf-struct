@@ -61,6 +61,8 @@ def init_dataset(file_type, indir, outdir):
 @click.argument('raw-dir', type=click.Path(exists=True))
 @click.argument('anno-dir', type=click.Path(exists=True))
 def _evaluate(k_folds: int, prediction, metrics, file_type: str, feature: str, raw_dir, anno_dir):
+    """ Evaluate pdf-struct with k-Fold cross validation.
+    """
     print(f'Loading annotations from {anno_dir}')
     if file_type == 'hocr':
         annos = transition_labels.load_hocr_annos(anno_dir)
@@ -97,6 +99,9 @@ def _evaluate(k_folds: int, prediction, metrics, file_type: str, feature: str, r
 @click.argument('anno-dir', type=click.Path(exists=True))
 @click.argument('out-path', type=click.Path(exists=False))
 def train(file_type: str, feature: str, raw_dir: str, anno_dir: str, out_path: str):
+    """ Train a pdf-struct model with raw-dir and anno-dir as inputs and dump
+    the model to out-path.
+    """
     if file_type == 'hocr':
         raise NotImplementedError('data-stats does not currently support hocr')
 
@@ -119,12 +124,21 @@ def train(file_type: str, feature: str, raw_dir: str, anno_dir: str, out_path: s
 
 @cli.command()
 @click.option('-o', '--out', type=click.Path(exists=False), default=None)
-@click.option('-f', '--format', type=click.Choice(('paragraphs', 'tabbed', 'tree')), default='paragraphs')
-@click.option('-m', '--model', type=str, default=None)
-@click.option('-p', '--path', type=click.Path(exists=False), default=None)
+@click.option(
+    '-f', '--format', type=click.Choice(('paragraphs', 'tabbed', 'tree')),
+    default='paragraphs', help='Output format.')
+@click.option(
+    '-m', '--model', type=str, default=None,
+    help='Specify a pretrained model from https://github.com/stanfordnlp/pdf-struct-models')
+@click.option(
+    '-p', '--path', type=click.Path(exists=False), default=None,
+    help='Specify a local pretrained model.')
 @click.argument('in-path', type=click.Path(exists=True))
 def predict(out: Optional[str], format: str, model: Optional[str],
             path: Optional[str], in_path: str):
+    """ Predict in-path's logical structures using the specified model. You need
+    to specify either one of --model and --path.
+    """
     if (model is None) == (path is None):
         raise click.UsageError('One and only one of --model and --path must be specified.')
     if model is not None:
@@ -164,6 +178,8 @@ def predict(out: Optional[str], format: str, model: Optional[str],
 @click.argument('raw-dir', type=click.Path(exists=True))
 @click.argument('anno-dir', type=click.Path(exists=True))
 def data_stats(file_type: str, raw_dir: str, anno_dir: str):
+    """ Calculate dataset statistics.
+    """
     if file_type == 'hocr':
         raise NotImplementedError('data-stats does not currently support hocr')
     print(f'Loading annotations from {anno_dir}')

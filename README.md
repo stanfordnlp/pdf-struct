@@ -1,23 +1,47 @@
 # pdf-struct: Logical structure analysis for visually structured documents
 
-## Prerequisite
+This is a tool for extracting fine-grained logical structures (such as boundaries and their hierarchies) from visually structured documents (VSDs) such as PDFs.
+pdf-struct is easily customizable to different types of VSDs and it significantly outperformed baselines in identifying different structures in VSDs.
+For example, our system obtained a paragraph boundary detection F1 score of 0.953 which is significantly better than a popular PDF-to-text tool with an F1 score of 0.739.
+Please note that current pdf-struct has several limitations:
 
-This program runs on Python 3 (tested on 3.9.5).
+* It is intended for single-column documents. It does not suport multi-column documents.
+* Published models are trained on contracts. It may work on general documents, but it has not been tested. Nevertheless, you can train your own model using a corpus of your choice.
+
+Details of pdf-struct can be found in our [paper](https://arxiv.org/abs/2105.00150) that was published in "Natural Legal Language Processing Workshop 2021".
+You can find the dataset for reproducing the paper [here](https://stanfordnlp.github.io/pdf-struct-dataset/).
+
+## Basic Usage
+
+This program runs on Python 3 (tested on 3.8.5).
+Install pdf-struct:
+
+```
+pip install pdf-struct
+```
+
+```
+pdf-struct predict --model PDFContractEnFeatureExtractor ${PATH_TO_PDF_FILE}
+```
+
+You may choose a pretrained model from https://github.com/stanfordnlp/pdf-struct-models
+
+## Advanced Usage
+
+This section explains the way to create your own dataset and to train your own models.
+
+### Prerequisite
+
 To install dependencies, run:
 
 ```bash
-pip install -r requirements.txt -f https://download.pytorch.org/whl/torch_stable.html
+pip install -r requirements.txt
 ```
-
-## How to run
-
-Currently, this program is structured to maximize ease of conducting experiments.
-**Thus, it does not contain a command to conduct inference on unlabeled data.***
-This section explains the way to conduct an experiment on PDF/text/HOCR.
 
 ### Getting data ready
 
-First, place your documents in `data/raw`. They must have following extensions:
+First, place your raw documents in a directory of your choice.
+They must have following extensions:
 
 * `*.pdf`: PDF files with embedded text. PDF without embedded text (i.e. those that require OCR) or two columns PDF is not supported.
 * `*.txt`: Plain text files that are visually structured with spaces/line breaks.
@@ -39,16 +63,16 @@ find my_input_directory/ -type f | \
 Create TSV file for annotation. 
 
 ```bash
-python create_train_data.py ${FILE_TYPE}
+pdf-struct init-dataset ${FILE_TYPE} ${RAW_DOCUMENTS_DIR} ${OUTPUT_DIR}
 ```
 
 where `${FILE_TYPE}` should be one of `pdf`, `txt` or `hocr`.
 
-This will output tsv files to `data/anno_${FILE_TYPE}`.
+This will output tsv files to `${OUTPUT_DIR}`.
 
 ### Annotating TSV files
 
-Carry annotation by directly editing files in `data/anno_${FILE_TYPE}`.
+Annotate TSV files that were geenerated with `init-dataset` command.
 
 Each line of TSV file is organized as following:
 
@@ -119,12 +143,27 @@ Pointers are 1-indexed (starts from 1) and 0 denotes no pointer.
 A pointer can be set to `-1` to return to the most upper hierarchy.
 The last line should be annotated with pointer `-1` and label `s` (though it is ignored internally).
   
-### Training and evaluating models
+### Evaluating models
 
 You can run experiments with following command:
 
 ```bash
-python evaluate_ml.py ${FILE_TYPE}
+pdf-struct evaluate ${FILE_TYPE} ${FEATURE_EXTRACTOR_NAME} ${RAW_DOCUMENTS_DIR} ${ANNOTATED_DOCUMENTS_DIR}
 ```
 
+Refer `pdf-struct evaluate --help` for the list of the feature extractors.
 This will run k-folds cross validation over the data.
+
+### Training models
+
+You can train a new model on your dataset.
+
+```bash
+pdf-struct train ${FILE_TYPE} ${FEATURE_EXTRACTOR_NAME} ${RAW_DOCUMENTS_DIR} ${ANNOTATED_DOCUMENTS_DIR} ${MODEL_OUTPUT_PATH}
+```
+
+You can then feed `${MODEL_OUTPUT_PATH}` to `--path` option of `pdf-struct predict`.
+
+## Customizing feature extractor
+
+Coming soon!
