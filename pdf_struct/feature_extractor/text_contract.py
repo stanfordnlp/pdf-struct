@@ -125,19 +125,6 @@ class TextContractFeatureExtractor(BaseFeatureExtractor):
             'value': numbered_list_state.value,
             'states': states}
 
-    @feature()
-    def language_model_coherence(self, tb1, tb2, tb3, tb4):
-        if tb1 is None or tb3 is None:
-            loss_diff_next = 0.
-            loss_diff_prev = 0.
-        else:
-            loss_diff_next = compare_losses('en', tb2.text, tb3.text, prev=tb1.text)
-            loss_diff_prev = compare_losses('en', tb2.text, tb1.text, next=tb3.text)
-        return {
-            'loss_diff_next': loss_diff_next,
-            'loss_diff_prev': loss_diff_prev
-        }
-
     @single_input_feature([2])
     def whereas(self, tb):
         return lexical.whereas(_gt(tb))
@@ -211,4 +198,20 @@ class TextContractFeatureExtractor(BaseFeatureExtractor):
             '1': self.left_aligned(tb1),
             '3': True if tb3 is None else self.left_aligned(tb3),
             'head': self.left_aligned(head_tb)
+        }
+
+
+class TextContractFeatureExtractorWithLM(TextContractFeatureExtractor):
+
+    @feature()
+    def language_model_coherence(self, tb1, tb2, tb3, tb4):
+        if tb1 is None or tb3 is None:
+            loss_diff_next = 0.
+            loss_diff_prev = 0.
+        else:
+            loss_diff_next = compare_losses('en', tb2.text, tb3.text, prev=tb1.text)
+            loss_diff_prev = compare_losses('en', tb2.text, tb1.text, next=tb3.text)
+        return {
+            'loss_diff_next': loss_diff_next,
+            'loss_diff_prev': loss_diff_prev
         }
