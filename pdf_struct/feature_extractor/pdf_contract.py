@@ -263,7 +263,7 @@ class PDFContractEnFeatureExtractor(BasePDFFeatureExtractor):
             }
 
 
-class PDFContractEnFeatureExtractorLM(PDFContractEnFeatureExtractor):
+class PDFContractEnFeatureExtractorWithLM(PDFContractEnFeatureExtractor):
 
     @feature()
     def language_model_coherence(self, tb1, tb2, tb3, tb4):
