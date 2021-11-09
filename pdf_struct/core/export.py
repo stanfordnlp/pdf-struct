@@ -68,7 +68,6 @@ def get_birelationship(hierarchy_matrix, target: int, relation: int) -> List[int
 def to_tree(document: Document, insert_space=True):
     sep = ' ' if insert_space else ''
     m = create_hierarchy_matrix(document)
-    import pdb; pdb.set_trace()
     assert len(m) == len(document.text_blocks)
     # since m is an upper triangle matrix, incorporate flipped matrix to
     # incorporate bidirectionality to SAME_LEVEL
