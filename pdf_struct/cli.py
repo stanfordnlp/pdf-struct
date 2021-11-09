@@ -71,6 +71,11 @@ def _evaluate(k_folds: int, prediction, metrics, file_type: str, feature: str, r
 
     print('Loading raw files')
     documents = loader.modules[file_type].load_from_directory(raw_dir, annos)
+    if len(documents) == 0:
+        click.echo(
+            f'No matching documents found in {raw_dir}. Please check directory '
+            'path and file extention.', err=True)
+        exit(1)
 
     feature_extractor_cls = feature_extractor.feature_extractors[feature]
 
@@ -110,7 +115,11 @@ def train(file_type: str, feature: str, raw_dir: str, anno_dir: str, out_path: s
 
     print('Loading raw files')
     documents = loader.modules[file_type].load_from_directory(raw_dir, annos)
-
+    if len(documents) == 0:
+        click.echo(
+            f'No matching documents found in {raw_dir}. Please check directory '
+            'path and file extention.', err=True)
+        exit(1)
     feature_extractor_cls = feature_extractor.feature_extractors[feature]
     print('Extracting features from documents')
     documents = [feature_extractor_cls.append_features_to_document(document)
