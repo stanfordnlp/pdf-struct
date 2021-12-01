@@ -101,9 +101,13 @@ def predict_with_classifiers(clf, clf_ptr, documents: List[Document], used_featu
                             d.text_blocks, d.labels[:j], i, j)
                         X_test_ptr.append(d.get_feature_array(feat))
                         ptr_candidates.append(i)
-            if len(X_test_ptr) > 0:
-                pointers.append(ptr_candidates[np.argmax(
-                    clf_ptr.predict_proba(np.array(X_test_ptr))[:, 1])])
+                if len(X_test_ptr) > 0:
+                    pointers.append(ptr_candidates[np.argmax(
+                        clf_ptr.predict_proba(np.array(X_test_ptr))[:, 1])])
+                else:
+                    # When it is UP but there exists no DOWN to point to
+                    d.labels[j] = ListAction.SAME_LEVEL
+                    pointers.append(-1)
             else:
                 pointers.append(-1)
         d.pointers = pointers
