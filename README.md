@@ -8,7 +8,7 @@ Please note that current pdf-struct has several limitations:
 * It is intended for single-column documents. It does not suport multi-column documents.
 * Published models are trained on contracts. It may work on general documents, but it has not been tested. Nevertheless, you can train your own model using a corpus of your choice.
 
-Details of pdf-struct can be found in our [paper](https://arxiv.org/abs/2105.00150) that was published in "Natural Legal Language Processing Workshop 2021".
+Details of pdf-struct can be found in our [paper](https://aclanthology.org/2021.nllp-1.15/) that was published in "Natural Legal Language Processing Workshop 2021".
 You can find the dataset for reproducing the paper [here](https://stanfordnlp.github.io/pdf-struct-dataset/).
 
 ## Basic Usage
