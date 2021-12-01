@@ -21,7 +21,7 @@ from typing import Generator, Tuple, List, Set, Optional
 
 import tqdm
 from pdfminer.converter import PDFPageAggregator
-from pdfminer.layout import LAParams, LTTextBox, LTTextLine, LTFigure
+from pdfminer.layout import LAParams, LTTextBox, LTTextLine, LTFigure, LTChar
 from pdfminer.pdfdocument import PDFDocument as _PDFDocument
 from pdfminer.pdfinterp import PDFResourceManager, PDFPageInterpreter
 from pdfminer.pdfpage import PDFPage
@@ -114,7 +114,7 @@ def parse_pdf(fs) -> Generator[TextBox, None, None]:
 
 def parse_layout(layout, page: int, block: str):
     for lt_obj in layout:
-        if isinstance(lt_obj, LTTextLine):
+        if isinstance(lt_obj, (LTTextLine, LTChar)):
             text = preprocess_text(lt_obj.get_text().strip('\n'))
             if block is None:
                 block = uuid.uuid4().hex
@@ -124,7 +124,7 @@ def parse_layout(layout, page: int, block: str):
             block = uuid.uuid4().hex
             yield from parse_layout(lt_obj, page, block)
         elif isinstance(lt_obj, LTFigure):
-            pass
+            yield from parse_layout(lt_obj, page, block)
 
 
 def load_document(path: str, labels: Optional[List[ListAction]], pointers: Optional[List[int]]):
