@@ -131,7 +131,38 @@ def train(file_type: str, feature: str, raw_dir: str, anno_dir: str, out_path: s
     print(f'Model successfully dumped at {out_path}')
 
 
-@cli.command()
+class PredictUsageError(RuntimeError):
+    pass
+
+
+def predict(format: str, in_path: str, model: Optional[str]=None,
+            model_path: Optional[str]=None):
+    if (model is None) == (model_path is None):
+        raise PredictUsageError('One and only one of --model and --path must be specified.')
+    if model is not None:
+        model_path = cached_model_download(model)
+        if model_path is None:
+            raise PredictUsageError(f'Model "{model}" cannot be found.')
+    clf, clf_ptr, file_type, feature = joblib.load(model_path)
+    document = loader.modules[file_type].load_document(in_path, None, None)
+    feature_extractor_cls = feature_extractor.feature_extractors[feature]
+    document = feature_extractor_cls.append_features_to_document(document)
+
+    pred = predict_with_classifiers(clf, clf_ptr, [document])[0]
+    if format in ('paragraphs', 'tabbed'):
+        paragraphs = to_paragraphs(pred)
+        if format == 'paragraphs':
+            return [paragraph for paragraph, _ in paragraphs]
+        else:
+            return ['\t' * level + paragraph
+                    for paragraph, level in paragraphs]
+    elif format == 'tree':
+        return to_tree(pred)
+    else:
+        assert not 'Should not get here'
+
+
+@cli.command('predict')
 @click.option('-o', '--out', type=click.Path(exists=False), default=None)
 @click.option(
     '-f', '--format', type=click.Choice(('paragraphs', 'tabbed', 'tree')),
@@ -143,41 +174,26 @@ def train(file_type: str, feature: str, raw_dir: str, anno_dir: str, out_path: s
     '-p', '--path', type=click.Path(exists=False), default=None,
     help='Specify a local pretrained model.')
 @click.argument('in-path', type=click.Path(exists=True))
-def predict(out: Optional[str], format: str, model: Optional[str],
-            path: Optional[str], in_path: str):
+def _predict(out: Optional[str], format: str, model: Optional[str],
+             path: Optional[str], in_path: str):
     """ Predict in-path's logical structures using the specified model. You need
     to specify either one of --model and --path.
     """
-    if (model is None) == (path is None):
-        raise click.UsageError('One and only one of --model and --path must be specified.')
-    if model is not None:
-        path = cached_model_download(model)
-        if path is None:
-            click.echo(f'Model "{model}" cannot be found. Aborting...', err=True)
-            exit(1)
-    clf, clf_ptr, file_type, feature = joblib.load(path)
-    document = loader.modules[file_type].load_document(in_path, None, None)
-    feature_extractor_cls = feature_extractor.feature_extractors[feature]
-    document = feature_extractor_cls.append_features_to_document(document)
+    try:
+        pred = predict(format, in_path, model=model, model_path=path)
+    except PredictUsageError as e:
+        raise click.UsageError(f'{e} Aborting ...')
 
     if out is None:
         out_ = sys.stdout
     else:
         out_ = open(out, 'w')
-    pred = predict_with_classifiers(clf, clf_ptr, [document])[0]
+
     if format in ('paragraphs', 'tabbed'):
-        paragraphs = to_paragraphs(pred)
-        if format == 'paragraphs':
-            for paragraph, _ in paragraphs:
-                out_.write(paragraph + '\n')
-        else:
-            for paragraph, level in paragraphs:
-                out_.write('\t' * level + paragraph + '\n')
+        out_.write('\n'.join(pred) + '\n')
     elif format == 'tree':
-        pred = to_tree(pred)
         out_.write(json.dumps(pred, indent=2))
-    else:
-        assert not 'Should not get here'
+
     if out is not None:
         out_.close()
 
