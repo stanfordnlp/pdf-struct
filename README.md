@@ -20,11 +20,31 @@ Install pdf-struct:
 pip install pdf-struct
 ```
 
+### CLI
+
 ```
 pdf-struct predict --model PDFContractEnFeatureExtractor ${PATH_TO_PDF_FILE}
 ```
 
-You may choose a pretrained model from https://github.com/stanfordnlp/pdf-struct-models
+You may choose a pretrained model from https://github.com/stanfordnlp/pdf-struct-models .
+Please refer `pdf-struct predict --help` for full options.
+
+### Python Interface
+
+`pdf-struct` provides a Python interface for inline prediction, too:
+
+```python
+import pdf_struct
+
+
+pdf_struct.predict(
+  format='paragraphs',
+  in_path=path_to_pdf_file,
+  model='PDFContractEnFeatureExtractor'
+)
+```
+
+You can refer `pdf-struct predict --help` for the options, as it is basically what is used internally by CLI.
 
 ## Advanced Usage
 
