@@ -187,3 +187,23 @@ You can then feed `${MODEL_OUTPUT_PATH}` to `--path` option of `pdf-struct predi
 ## Customizing feature extractor
 
 Coming soon!
+
+## Citing
+
+If you used our work for your academic publication, please cite our work:
+
+```
+@inproceedings{koreeda-manning-2021-capturing,
+    title = "Capturing Logical Structure of Visually Structured Documents with Multimodal Transition Parser",
+    author = "Koreeda, Yuta  and
+      Manning, Christopher",
+    booktitle = "Proceedings of the Natural Legal Language Processing Workshop 2021",
+    month = nov,
+    year = "2021",
+    address = "Punta Cana, Dominican Republic",
+    publisher = "Association for Computational Linguistics",
+    url = "https://aclanthology.org/2021.nllp-1.15",
+    doi = "10.18653/v1/2021.nllp-1.15",
+    pages = "144--154"
+}
+```
